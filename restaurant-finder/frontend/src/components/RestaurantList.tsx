@@ -345,30 +345,39 @@ const RestaurantList: React.FC = () => {
         restaurant.location.coordinates[1],
         restaurant.location.coordinates[0]
       ]);
-      setMapZoom(15); // Zoom in when a restaurant is selected
+      // Don't change the zoom level when selecting a restaurant
+      // This prevents the jarring zoom in/out effect
     }
     
-    // Scroll to the selected restaurant in the list
+    // Ensure the selected restaurant card is visible in the list
     setTimeout(() => {
-      if (restaurantRefs.current[restaurant._id] && restaurantListRef.current) {
-        const card = restaurantRefs.current[restaurant._id];
-        const container = restaurantListRef.current;
+      const card = restaurantRefs.current[restaurant._id];
+      if (card && restaurantListRef.current) {
+        const containerRect = restaurantListRef.current.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
         
-        if (card) {
-          // Calculate scroll position
-          const cardTop = card.offsetTop;
-          const containerScrollTop = container.scrollTop;
-          const containerHeight = container.clientHeight;
-          const cardHeight = card.clientHeight;
+        // Check if the card is not fully visible in the container
+        if (cardRect.top < containerRect.top || cardRect.bottom > containerRect.bottom) {
+          // Instead of scrollIntoView which affects the entire page,
+          // manually scroll only the container
+          const scrollContainer = restaurantListRef.current;
+          const scrollTop = scrollContainer.scrollTop;
           
-          // Check if card is outside visible area
-          if (cardTop < containerScrollTop || cardTop + cardHeight > containerScrollTop + containerHeight) {
-            // Scroll to make card visible in the middle of the container if possible
-            container.scrollTo({
-              top: cardTop - (containerHeight / 2) + (cardHeight / 2),
-              behavior: 'smooth'
-            });
+          // Calculate desired scroll position
+          let targetScroll;
+          if (cardRect.top < containerRect.top) {
+            // Card is above visible area - scroll up
+            targetScroll = scrollTop - (containerRect.top - cardRect.top);
+          } else {
+            // Card is below visible area - scroll down
+            targetScroll = scrollTop + (cardRect.bottom - containerRect.bottom);
           }
+          
+          // Smooth scroll to the target position
+          scrollContainer.scrollTo({
+            top: targetScroll,
+            behavior: 'smooth'
+          });
         }
       }
     }, 100);
@@ -395,26 +404,23 @@ const RestaurantList: React.FC = () => {
   
   return (
     <div className="restaurant-list-container">
-      <h1>Restaurants</h1>
-      
       {/* Search section */}
       <div className="search-section">
-        <form onSubmit={handleSearch} className="search-form">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Search by restaurant name or location (e.g., Clementi, Orchard, 120115)"
-            className="search-input"
-          />
-          <button type="submit" className="search-button">
-            Search
-          </button>
-        </form>
-        <div className="search-help">
-          <small>
-            Try searching for a restaurant name or location (e.g., "Pizza", "Clementi", or a postal code like "120115")
-          </small>
+        <div className="search-container">
+          <form onSubmit={handleSearch} className="search-form">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Search by restaurant name or location (e.g., Clementi, Orchard, 120115)"
+              className="search-input"
+            />
+          </form>
+          <div className="search-help">
+            <small>
+              Try searching for a restaurant name or location (e.g., "Pizza", "Clementi", or a postal code like "120115")
+            </small>
+          </div>
         </div>
       </div>
       
@@ -424,22 +430,12 @@ const RestaurantList: React.FC = () => {
         <div className="loading">Loading restaurants...</div>
       ) : (
         <>
-          <div className="results-summary">
-            {searchingNearby && locationSearched ? (
-              <>Found {totalRestaurants} restaurants near {locationSearched}
-                {totalPages > 1 && ` - Page ${currentPage} of ${totalPages}`}
-              </>
-            ) : (
-              <>
-                Found {totalRestaurants} restaurants
-                {searchParams.get('q') && ` matching "${searchParams.get('q')}"`}
-                {totalPages > 1 && ` - Page ${currentPage} of ${totalPages}`}
-              </>
-            )}
-          </div>
-          
           <div className="restaurant-view-container">
             <div className="restaurant-list-side" ref={restaurantListRef}>
+              <div className="results-header">
+                <h2>{totalRestaurants} restaurants found</h2>
+              </div>
+              
               <div className="restaurant-list-enhanced">
                 {restaurants.length > 0 ? (
                   <div className="restaurant-cards">
@@ -492,6 +488,39 @@ const RestaurantList: React.FC = () => {
                   <div className="no-results">No restaurants found.</div>
                 )}
               </div>
+              
+              {/* Move pagination controls inside the list side */}
+              {totalPages > 1 && (
+                <div className="pagination">
+                  <button
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                  >
+                    First
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </button>
+                  <span className="page-info">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Last
+                  </button>
+                </div>
+              )}
             </div>
             
             <div className="restaurant-map-side">
@@ -507,39 +536,6 @@ const RestaurantList: React.FC = () => {
               </div>
             </div>
           </div>
-          
-          {/* Pagination controls - Show for all searches with multiple pages */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                onClick={() => handlePageChange(1)}
-                disabled={currentPage === 1}
-              >
-                First
-              </button>
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </button>
-              <span className="page-info">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
-              <button
-                onClick={() => handlePageChange(totalPages)}
-                disabled={currentPage === totalPages}
-              >
-                Last
-              </button>
-            </div>
-          )}
         </>
       )}
     </div>

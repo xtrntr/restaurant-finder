@@ -71,57 +71,65 @@ body {
 
 /* Restaurant List Page */
 .restaurant-list-container {
-  max-width: 100%;
+  width: 100%;
   margin: 0;
-  padding: 0 20px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 160px); /* Adjust height to account for header and footer */
+  overflow-y: auto; /* Allow container to scroll if content exceeds height */
 }
 
 .restaurant-list-container h1 {
-  margin-bottom: 15px;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .results-summary {
+  color: #555;
+  margin: 10px 0;
   font-size: 0.9rem;
-  color: #666;
-  margin: 5px 0;
-  text-align: left;
+  padding: 0 20px;
 }
 
 /* Search section */
 .search-section {
   width: 100%;
-  margin: 10px 0;
+  margin: 15px 0;
   display: flex;
   justify-content: center;
+  padding: 0 20px;
+}
+
+.search-container {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .search-form {
   display: flex;
   width: 100%;
-  max-width: 800px;
-  gap: 10px;
 }
 
 .search-input {
-  flex: 1;
-  padding: 10px;
+  width: 100%;
+  padding: 12px 15px;
   border: 1px solid #ddd;
   border-radius: 4px;
-}
-
-.search-button {
-  padding: 10px 20px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  font-size: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .search-help {
-  margin-top: 5px;
-  font-size: 0.8rem;
+  text-align: left;
+  padding: 0 5px;
   color: #666;
+  margin-bottom: 20px; /* Add space between search help and results summary */
+  padding-bottom: 15px; /* Add more padding at bottom */
+  border-bottom: 1px solid #eee; /* Add subtle separator line */
 }
 
 /* Restaurant view container - list and map */
@@ -130,17 +138,17 @@ body {
   width: 100%;
   gap: 20px;
   flex: 1;
-  height: calc(100vh - 200px); /* Adjust height to fit viewport */
-  min-height: 400px; /* Ensure there's a minimum height */
+  height: calc(100vh - 250px); /* Adjust height to account for header, search and footer */
   box-sizing: border-box;
   overflow: hidden;
+  padding: 0 20px 20px 20px;
 }
 
 .restaurant-list-side {
   flex: 2;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: hidden; /* Set to hidden since the scrolling happens in .restaurant-list-enhanced */
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   background-color: #fff;
@@ -154,6 +162,7 @@ body {
   border-radius: 4px;
   overflow: hidden;
   height: 100%;
+  position: relative;
   min-width: 0;
 }
 
@@ -168,6 +177,15 @@ body {
   height: 100%;
 }
 
+/* Add styling for restaurant-list-enhanced */
+.restaurant-list-enhanced {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: auto;
+  flex: 1;
+}
+
 /* Restaurant cards */
 .restaurant-cards {
   padding: 10px;
@@ -177,6 +195,27 @@ body {
   overflow-y: auto;
   flex: 1;
   height: 100%;
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: #d4d4d4 #f1f1f1; /* For Firefox */
+}
+
+/* Add styling for scrollbar */
+.restaurant-cards::-webkit-scrollbar {
+  width: 8px;
+}
+
+.restaurant-cards::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.restaurant-cards::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+  border-radius: 4px;
+}
+
+.restaurant-cards::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
 }
 
 .restaurant-card {
@@ -304,20 +343,22 @@ body {
   justify-content: center;
   align-items: center;
   gap: 10px;
-  margin: 10px 0;
-  padding: 5px 0;
+  margin: 0;
+  padding: 12px 10px;
   flex-shrink: 0;
+  border-top: 1px solid #eee;
+  background-color: #f8f9fa;
 }
 
 .pagination button {
-  background-color: #f8f9fa;
+  background-color: white;
   border: 1px solid #ddd;
   color: #333;
   padding: 5px 12px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .pagination button:not(:disabled):hover {
@@ -412,4 +453,20 @@ body {
 /* Style for the selected marker on the map */
 .selected-marker-icon {
   filter: drop-shadow(0 0 5px rgba(52, 152, 219, 0.8));
+}
+
+/* Results header at top of list widget */
+.results-header {
+  padding: 12px 15px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;  /* Prevent shrinking */
+}
+
+.results-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  text-align: left;
 } 
