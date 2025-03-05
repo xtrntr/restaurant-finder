@@ -4,6 +4,40 @@ import L from 'leaflet';
 import { Restaurant } from '../types';
 import 'leaflet/dist/leaflet.css';
 
+// Helper function to format date as "X time ago"
+const formatTimeAgo = (dateString: string): string => {
+  const now = new Date();
+  const updatedDate = new Date(dateString);
+  const diffInSeconds = Math.floor((now.getTime() - updatedDate.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) {
+    return `${diffInSeconds} seconds ago`;
+  }
+  
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'} ago`;
+  }
+  
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+  }
+  
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 30) {
+    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+  }
+  
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (diffInMonths < 12) {
+    return `${diffInMonths} ${diffInMonths === 1 ? 'month' : 'months'} ago`;
+  }
+  
+  const diffInYears = Math.floor(diffInMonths / 12);
+  return `${diffInYears} ${diffInYears === 1 ? 'year' : 'years'} ago`;
+};
+
 // Create a custom icon for restaurants
 const restaurantIcon = new L.Icon({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
@@ -140,10 +174,50 @@ const RestaurantMap: React.FC<RestaurantMapProps> = ({
                   <h3>{restaurant.name}</h3>
                   <p>{restaurant.address}</p>
                   <p>{restaurant.cuisines.join(', ')}</p>
-                  {restaurant.rating && <p>Rating: {restaurant.rating.toFixed(1)}</p>}
-                  {restaurant.isOpen !== undefined && (
-                    <p>{restaurant.isOpen ? 'Open Now' : 'Closed'}</p>
+                  
+                  {/* Add price level and rating with review count */}
+                  <div className="popup-details">
+                    {restaurant.priceLevel && (
+                      <span className="popup-price">{'$'.repeat(restaurant.priceLevel)}</span>
+                    )}
+                    {restaurant.rating && (
+                      <span className="popup-rating">
+                        ★ {restaurant.rating.toFixed(1)}
+                        {restaurant.reviewCount && <span> ({restaurant.reviewCount})</span>}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Add opening hours for current day */}
+                  {restaurant.openingHours && (
+                    <p className="popup-hours">
+                      <strong>Hours today:</strong> {(() => {
+                        const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                        const today = days[new Date().getDay()];
+                        return restaurant.openingHours[today as keyof typeof restaurant.openingHours] || restaurant.openingHours.displayedHours;
+                      })()}
+                    </p>
                   )}
+                  
+                  {/* Add estimated delivery time */}
+                  {restaurant.estimatedDeliveryTime && (
+                    <p className="popup-delivery">
+                      <span>🕒</span> {restaurant.estimatedDeliveryTime} min delivery
+                    </p>
+                  )}
+                  
+                  {/* Display open/closed status */}
+                  {restaurant.isOpen !== undefined && (
+                    <p className={`popup-status ${restaurant.isOpen ? 'open' : 'closed'}`}>
+                      {restaurant.isOpen ? 'Open Now' : 'Closed'}
+                    </p>
+                  )}
+                  
+                  {/* Add last updated date */}
+                  <p className="popup-updated">
+                    Last updated: {formatTimeAgo(restaurant.lastUpdated)}
+                  </p>
+                  
                   <a href={`/restaurant/${restaurant._id}`}>View Details</a>
                 </div>
               </Popup>

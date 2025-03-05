@@ -4,6 +4,40 @@ import { Restaurant, ApiResponse, SearchParams } from '../types';
 import { geocodeAddress } from '../services/GeocodeService';
 import RestaurantMap from './RestaurantMap';
 
+// Helper function to format date as "X time ago"
+const formatTimeAgo = (dateString: string): string => {
+  const now = new Date();
+  const updatedDate = new Date(dateString);
+  const diffInSeconds = Math.floor((now.getTime() - updatedDate.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) {
+    return `${diffInSeconds} seconds ago`;
+  }
+  
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'} ago`;
+  }
+  
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+  }
+  
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 30) {
+    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+  }
+  
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (diffInMonths < 12) {
+    return `${diffInMonths} ${diffInMonths === 1 ? 'month' : 'months'} ago`;
+  }
+  
+  const diffInYears = Math.floor(diffInMonths / 12);
+  return `${diffInYears} ${diffInYears === 1 ? 'year' : 'years'} ago`;
+};
+
 // Step 3.1: Adding search functionality
 const RestaurantList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -457,11 +491,34 @@ const RestaurantList: React.FC = () => {
                             <h3>{restaurant.name}</h3>
                             <p className="restaurant-cuisines">{restaurant.cuisines.join(', ')}</p>
                             <p className="restaurant-address">{restaurant.address}</p>
+                            
+                            {/* Add price level display */}
+                            {restaurant.priceLevel && (
+                              <p className="restaurant-price-level">
+                                {'$'.repeat(restaurant.priceLevel)}
+                                <span className="price-muted">{'$'.repeat(4 - (restaurant.priceLevel || 0))}</span>
+                              </p>
+                            )}
+                            
+                            {/* Display opening hours for current day */}
+                            {restaurant.openingHours && (
+                              <p className="restaurant-hours">
+                                <span className="hours-label">Hours today: </span>
+                                {(() => {
+                                  const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                                  const today = days[new Date().getDay()];
+                                  return restaurant.openingHours[today as keyof typeof restaurant.openingHours] || restaurant.openingHours.displayedHours;
+                                })()}
+                              </p>
+                            )}
                           </div>
                           <div>
                             <div className="restaurant-details">
                               {restaurant.rating !== undefined && (
                                 <span className="restaurant-rating">★ {restaurant.rating.toFixed(1)}</span>
+                              )}
+                              {restaurant.reviewCount !== undefined && (
+                                <span className="restaurant-reviews">({restaurant.reviewCount})</span>
                               )}
                               <span 
                                 className={`restaurant-status ${restaurant.isOpen ? 'open' : 'closed'}`}
@@ -472,6 +529,19 @@ const RestaurantList: React.FC = () => {
                                 <span className="restaurant-distance">{restaurant.distanceInKm.toFixed(1)} km</span>
                               )}
                             </div>
+                            
+                            {/* Add estimated delivery time */}
+                            {restaurant.estimatedDeliveryTime && (
+                              <div className="restaurant-delivery-time">
+                                <span className="delivery-icon">🕒</span> {restaurant.estimatedDeliveryTime} min delivery
+                              </div>
+                            )}
+                            
+                            {/* Update last updated date */}
+                            <div className="restaurant-updated">
+                              Last updated: {formatTimeAgo(restaurant.lastUpdated)}
+                            </div>
+                            
                             <a 
                               href={`/restaurant/${restaurant._id}`} 
                               className="view-details" 

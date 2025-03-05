@@ -469,4 +469,105 @@ body {
   font-weight: 600;
   color: #333;
   text-align: left;
+}
+
+/* Restaurant additional info */
+.restaurant-price-level {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 4px 0;
+}
+
+.price-muted {
+  color: #ccc;
+}
+
+.restaurant-hours {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 4px 0;
+}
+
+.hours-label {
+  font-weight: 500;
+  color: #444;
+}
+
+.restaurant-reviews {
+  font-size: 0.85rem;
+  color: #666;
+  margin-left: 2px;
+}
+
+.restaurant-delivery-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #555;
+  margin: 8px 0;
+}
+
+.delivery-icon {
+  color: #888;
+}
+
+.restaurant-updated {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+/* Restaurant popup details */
+.popup-details {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.popup-price {
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.popup-rating {
+  color: #f39c12;
+  font-weight: 500;
+}
+
+.popup-hours {
+  margin: 6px 0;
+  font-size: 0.9rem;
+}
+
+.popup-delivery {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9rem;
+  color: #555;
+  margin: 6px 0;
+}
+
+.popup-status {
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin: 8px 0;
+}
+
+.popup-status.open {
+  color: #27ae60;
+}
+
+.popup-status.closed {
+  color: #e74c3c;
+}
+
+.popup-updated {
+  font-size: 0.8rem;
+  color: #777;
+  margin: 8px 0;
+  font-style: italic;
 } 
