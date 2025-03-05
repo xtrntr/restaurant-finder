@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Restaurant } from '../types';
@@ -23,12 +23,19 @@ const selectedRestaurantIcon = new L.Icon({
   className: 'selected-marker-icon', // Custom class for additional styling
 });
 
-// MapUpdater component to handle center and zoom changes
+// Component to update the map view when center/zoom props change
+// Use a gentler approach with flyTo instead of setView for smoother transitions
 const MapUpdater = ({ center, zoom }: { center: [number, number], zoom: number }) => {
   const map = useMap();
-  React.useEffect(() => {
-    map.setView(center, zoom);
-  }, [map, center, zoom]);
+  
+  useEffect(() => {
+    // Only fly to the location - don't force a specific zoom level
+    // This keeps the current zoom level when centering on a restaurant
+    map.flyTo(center, map.getZoom(), {
+      duration: 0.75 // Shorter animation duration
+    });
+  }, [center, map]);
+  
   return null;
 };
 
