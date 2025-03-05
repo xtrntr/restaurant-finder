@@ -1,0 +1,37 @@
+{
+  "name": "scraper",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "watch": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Scraper for Grab Food restaurants",
+  "dependencies": {
+    "axios": "^1.8.1",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.4.7",
+    "fs-extra": "^11.3.0",
+    "mongoose": "^8.12.1",
+    "p-limit": "^6.2.0",
+    "p-retry": "^6.2.1",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.9",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.9",
+    "ts-jest": "^29.2.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  }
+}
