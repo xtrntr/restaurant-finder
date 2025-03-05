@@ -66,6 +66,7 @@ const RestaurantList: React.FC = () => {
   // Create refs for restaurant list container and restaurant cards
   const restaurantListRef = useRef<HTMLDivElement>(null);
   const restaurantRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const selectedCardRef = useRef<HTMLDivElement | null>(null);
   
   // Parse and set up search parameters from URL (using useCallback to fix dependency issue)
   const getSearchParams = useCallback((): SearchParams => {
@@ -476,27 +477,34 @@ const RestaurantList: React.FC = () => {
                     {restaurants.map((restaurant) => (
                       <div
                         key={restaurant._id}
-                        ref={el => restaurantRefs.current[restaurant._id] = el}
                         className={`restaurant-card ${selectedRestaurant?._id === restaurant._id ? 'selected' : ''}`}
                         onClick={() => handleRestaurantSelect(restaurant)}
+                        ref={el => {
+                          restaurantRefs.current[restaurant._id] = el;
+                          if (selectedRestaurant?._id === restaurant._id) {
+                            selectedCardRef.current = el;
+                          }
+                        }}
                       >
                         <div className="restaurant-photo">
                           <img 
-                            src={restaurant.photoUrl || 'https://via.placeholder.com/120x120?text=No+Image'} 
+                            src={restaurant.photoUrl || '/images/default-restaurant.jpg'} 
                             alt={restaurant.name} 
                           />
                         </div>
                         <div className="restaurant-info">
-                          <div>
+                          <div className="restaurant-content">
                             <h3>{restaurant.name}</h3>
                             <p className="restaurant-cuisines">{restaurant.cuisines.join(', ')}</p>
                             <p className="restaurant-address">{restaurant.address}</p>
                             
-                            {/* Add price level display */}
-                            {restaurant.priceLevel && (
+                            {/* Display price level as dollar signs */}
+                            {restaurant.priceLevel !== undefined && (
                               <p className="restaurant-price-level">
                                 {'$'.repeat(restaurant.priceLevel)}
-                                <span className="price-muted">{'$'.repeat(4 - (restaurant.priceLevel || 0))}</span>
+                                <span className="price-muted">
+                                  {'$'.repeat(4 - restaurant.priceLevel)}
+                                </span>
                               </p>
                             )}
                             
@@ -512,34 +520,37 @@ const RestaurantList: React.FC = () => {
                               </p>
                             )}
                           </div>
-                          <div>
-                            <div className="restaurant-details">
-                              {restaurant.rating !== undefined && (
-                                <span className="restaurant-rating">★ {restaurant.rating.toFixed(1)}</span>
-                              )}
-                              {restaurant.reviewCount !== undefined && (
-                                <span className="restaurant-reviews">({restaurant.reviewCount})</span>
-                              )}
-                              <span 
-                                className={`restaurant-status ${restaurant.isOpen ? 'open' : 'closed'}`}
-                              >
-                                {restaurant.isOpen ? 'Open' : 'Closed'}
-                              </span>
-                              {restaurant.distanceInKm !== undefined && (
-                                <span className="restaurant-distance">{restaurant.distanceInKm.toFixed(1)} km</span>
-                              )}
-                            </div>
-                            
-                            {/* Add estimated delivery time */}
-                            {restaurant.estimatedDeliveryTime && (
-                              <div className="restaurant-delivery-time">
-                                <span className="delivery-icon">🕒</span> {restaurant.estimatedDeliveryTime} min delivery
+                          
+                          <div className="restaurant-bottom">
+                            <div>
+                              <div className="restaurant-details">
+                                {restaurant.rating !== undefined && (
+                                  <span className="restaurant-rating">★ {restaurant.rating.toFixed(1)}</span>
+                                )}
+                                {restaurant.reviewCount !== undefined && (
+                                  <span className="restaurant-reviews">({restaurant.reviewCount})</span>
+                                )}
+                                <span 
+                                  className={`restaurant-status ${restaurant.isOpen ? 'open' : 'closed'}`}
+                                >
+                                  {restaurant.isOpen ? 'Open' : 'Closed'}
+                                </span>
+                                {restaurant.distanceInKm !== undefined && (
+                                  <span className="restaurant-distance">{restaurant.distanceInKm.toFixed(1)} km</span>
+                                )}
                               </div>
-                            )}
-                            
-                            {/* Update last updated date */}
-                            <div className="restaurant-updated">
-                              Last updated: {formatTimeAgo(restaurant.lastUpdated)}
+                              
+                              {/* Add estimated delivery time */}
+                              {restaurant.estimatedDeliveryTime && (
+                                <div className="restaurant-delivery-time">
+                                  <span className="delivery-icon">🕒</span> {restaurant.estimatedDeliveryTime} min delivery
+                                </div>
+                              )}
+                              
+                              {/* Update last updated date */}
+                              <div className="restaurant-updated">
+                                Last updated: {formatTimeAgo(restaurant.lastUpdated)}
+                              </div>
                             </div>
                             
                             <a 
