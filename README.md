@@ -6,6 +6,12 @@ A full-stack application that displays restaurants on a map with filtering and s
 2. **Backend**: A RESTful API that serves restaurant data with advanced search and geospatial filtering.
 3. **Frontend**: A React application that displays restaurants in both a list and on a map.
 
+Built purely with vibe coding.
+
+## Demo
+
+![Application Demo](final.gif)
+
 ## Project Structure
 
 ```
