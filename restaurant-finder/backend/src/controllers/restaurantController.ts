@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import Restaurant, { IRestaurant } from '../models/Restaurant';
 import { ApiError } from '../middleware/errorHandler';
 import logger from '../utils/logger';
+import mongoose from 'mongoose';
 
 /**
  * Get all restaurants with pagination
@@ -12,97 +13,217 @@ export const getAllRestaurants = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Simple indicator to verify when code changes take effect
+    console.log('\n⭐ Controller loaded:', new Date().toISOString());
+    
+    // Parse pagination parameters
     const page = parseInt(req.query.page as string || '1', 10);
     const limit = parseInt(req.query.limit as string || '20', 10);
     const skip = (page - 1) * limit;
-    
     const sort = (req.query.sort as string) || '-rating';
     
-    // Build query filters
-    const queryFilters: any = {};
+    // Initialize the filter object
+    let filter: any = {};
     
-    // Handle search query parameter
+    // Log raw query parameters for debugging
+    console.log('Raw query params:', JSON.stringify(req.query));
+    
+    // 1. Parse and apply text search filters
+    const name = req.query.name as string;
+    if (name && name.trim() !== '') {
+      // Use regex for partial and case-insensitive matching on name
+      filter.name = { $regex: name, $options: 'i' };
+      logger.info(`Added filter: name contains "${name}"`);
+    }
+    
+    const address = req.query.address as string;
+    if (address && address.trim() !== '') {
+      // Use regex for partial and case-insensitive matching on address
+      filter.address = { $regex: address, $options: 'i' };
+      logger.info(`Added filter: address contains "${address}"`);
+    }
+    
+    // General text search query
     const searchQuery = req.query.q as string;
     if (searchQuery && searchQuery.trim() !== '') {
-      // Add text search if query parameter is provided
-      queryFilters.$text = { $search: searchQuery };
+      filter.$text = { $search: searchQuery };
+      logger.info(`Added filter: text search for "${searchQuery}"`);
     }
     
-    // Handle area filter
+    // 2. Parse and apply categorical filters
     const area = req.query.area as string;
     if (area && area.trim() !== '') {
-      queryFilters.area = area;
+      filter.area = area;
+      logger.info(`Added filter: area = "${area}"`);
     }
     
-    // Handle cuisine filter
-    const cuisine = req.query.cuisine as string;
-    if (cuisine && cuisine.trim() !== '') {
-      queryFilters.cuisines = cuisine; // Assuming cuisines is an array in the schema
+    // 3. Handle array fields with $in operator
+    const cuisines = req.query.cuisines as string;
+    if (cuisines && cuisines.trim() !== '') {
+      // Split comma-separated cuisines and create an $in query
+      const cuisineArray = cuisines.split(',').map(c => c.trim());
+      filter.cuisines = { $in: cuisineArray };
+      logger.info(`Added filter: cuisines in [${cuisineArray.join(', ')}]`);
     }
     
-    // Handle openNow filter
-    const openNow = req.query.openNow === 'true';
-    if (openNow) {
-      queryFilters.isOpen = true;
+    // 4. Parse and apply numeric filters
+    const priceLevel = parseInt(req.query.priceLevel as string, 10);
+    if (!isNaN(priceLevel)) {
+      filter.priceLevel = priceLevel;
+      logger.info(`Added filter: priceLevel = ${priceLevel}`);
     }
     
-    // Handle maxDeliveryTime filter (for delivery under 30 mins)
-    const maxDeliveryTime = parseInt(req.query.maxDeliveryTime as string, 10);
-    if (!isNaN(maxDeliveryTime)) {
-      queryFilters.estimatedDeliveryTime = { $lte: maxDeliveryTime };
+    const exactRating = parseFloat(req.query.rating as string);
+    if (!isNaN(exactRating)) {
+      filter.rating = exactRating;
+      logger.info(`Added filter: rating = ${exactRating}`);
     }
     
-    // Handle minRating filter (for minimum star rating)
+    // 5. Parse and apply range-based filters
     const minRating = parseFloat(req.query.minRating as string);
-    console.log('minRating param:', req.query.minRating);
-    console.log('Parsed minRating:', minRating, 'isNaN:', isNaN(minRating));
     if (!isNaN(minRating)) {
-      queryFilters.rating = { $gte: minRating };
-      // Log the query filter we're using
-      console.log('Using rating filter:', queryFilters.rating);
+      filter.rating = { ...filter.rating, $gte: minRating };
+      logger.info(`Added filter: rating >= ${minRating}`);
     }
     
-    // Handle minReviews filter (for minimum number of reviews)
+    const maxRating = parseFloat(req.query.maxRating as string);
+    if (!isNaN(maxRating)) {
+      filter.rating = { ...filter.rating, $lte: maxRating };
+      logger.info(`Added filter: rating <= ${maxRating}`);
+    }
+    
+    const minPrice = parseInt(req.query.minPrice as string, 10);
+    if (!isNaN(minPrice)) {
+      filter.priceLevel = { ...filter.priceLevel, $gte: minPrice };
+      logger.info(`Added filter: priceLevel >= ${minPrice}`);
+    }
+    
+    const maxPrice = parseInt(req.query.maxPrice as string, 10);
+    if (!isNaN(maxPrice)) {
+      filter.priceLevel = { ...filter.priceLevel, $lte: maxPrice };
+      logger.info(`Added filter: priceLevel <= ${maxPrice}`);
+    }
+    
+    const minDistance = parseFloat(req.query.minDistance as string);
+    if (!isNaN(minDistance)) {
+      filter.distanceInKm = { ...filter.distanceInKm, $gte: minDistance };
+      logger.info(`Added filter: distanceInKm >= ${minDistance}`);
+    }
+    
+    const maxDistance = parseFloat(req.query.maxDistance as string);
+    if (!isNaN(maxDistance)) {
+      filter.distanceInKm = { ...filter.distanceInKm, $lte: maxDistance };
+      logger.info(`Added filter: distanceInKm <= ${maxDistance}`);
+    }
+    
     const minReviews = parseInt(req.query.minReviews as string, 10);
     if (!isNaN(minReviews)) {
-      queryFilters.reviewCount = { $gte: minReviews };
+      filter.reviewCount = { $gte: minReviews };
+      logger.info(`Added filter: reviewCount >= ${minReviews}`);
     }
     
-    console.log('Search filters:', queryFilters);
+    // Process delivery time filter
+    const deliveryUnder30 = req.query.deliveryUnder30 === 'true';
+    if (deliveryUnder30) {
+      filter.estimatedDeliveryTime = { $lte: 30 };
+      logger.info('Added filter: deliveryUnder30');
+    }
     
-    let restaurantQuery = Restaurant.find(queryFilters);
+    // Process isOpen filter - only apply when explicitly provided
+    if (req.query.isOpen !== undefined) {
+      const isOpen = req.query.isOpen === 'true';
+      filter.isOpen = isOpen;
+      logger.info(`Added filter: isOpen = ${isOpen}`);
+    }
     
-    // If text search is being used, sort by text score first, then by the requested sort
-    if (queryFilters.$text) {
-      restaurantQuery = restaurantQuery
-        .sort({ score: { $meta: 'textScore' }, [sort.replace('-', '')]: sort.startsWith('-') ? -1 : 1 });
+    // 6. Log the final filter object for debugging
+    logger.info('Final MongoDB query filter:', JSON.stringify(filter));
+    console.log('MONGODB QUERY FILTER:', JSON.stringify(filter, null, 2));
+    
+    let restaurants;
+    let total;
+    
+    // Handle openNow filter separately as it requires special processing
+    const openNow = req.query.openNow === 'true';
+    
+    if (openNow) {
+      // Processing for openNow filter (keeping the existing implementation)
+      logger.info(`Applying openNow filter, current time: ${new Date().toISOString()}`);
+      
+      // Get current day and time for filtering
+      const daysOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+      const now = new Date();
+      const currentDay = daysOfWeek[now.getDay()]; 
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const formattedTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+      
+      logger.info(`Current day: ${currentDay}, Current time: ${formattedTime}`);
+      
+      // 7. Use Restaurant.find(filter) with the constructed filter
+      restaurants = await Restaurant.find(filter)
+        .sort(filter.$text ? { score: { $meta: 'textScore' }, [sort.replace('-', '')]: sort.startsWith('-') ? -1 : 1 } : sort)
+        .limit(10000) // Get a large batch to filter
+        .select('-__v');
+      
+      // Post-processing filter for openNow
+      restaurants = restaurants.filter(restaurant => {
+        try {
+          // Get opening hours for the current day
+          const hours = restaurant.openingHours[currentDay as keyof typeof restaurant.openingHours];
+          
+          // Skip closed restaurants
+          if (!hours || hours === 'Closed') {
+            return false;
+          }
+          
+          // Parse opening hours (format: "HH:MM-HH:MM")
+          const [openTime, closeTime] = hours.split('-');
+          const [openHour, openMinute] = openTime.split(':').map(Number);
+          const [closeHour, closeMinute] = closeTime.split(':').map(Number);
+          
+          // Convert to minutes for easier comparison
+          const openMinutes = openHour * 60 + openMinute;
+          const closeMinutes = closeHour * 60 + closeMinute;
+          const currentMinutes = currentHour * 60 + currentMinute;
+          
+          // Check if the restaurant is open
+          return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+        } catch (error) {
+          logger.error(`Error processing opening hours for restaurant ${restaurant.name}:`, error);
+          return false; // Exclude on error
+        }
+      });
+      
+      // Apply pagination after filtering
+      total = restaurants.length;
+      restaurants = restaurants.slice(skip, skip + limit);
+      
+      logger.info(`After openNow filtering: ${total} restaurants match, showing ${restaurants.length}`);
     } else {
-      restaurantQuery = restaurantQuery.sort(sort);
+      // Regular query without openNow
+      logger.info('Using regular find with filters:', JSON.stringify(filter));
+      
+      // 7. Use Restaurant.find(filter) with the constructed filter
+      restaurants = await Restaurant.find(filter)
+        .sort(filter.$text ? { score: { $meta: 'textScore' }, [sort.replace('-', '')]: sort.startsWith('-') ? -1 : 1 } : sort)
+        .skip(skip)
+        .limit(limit)
+        .select('-__v');
+      total = await Restaurant.countDocuments(filter);
     }
     
-    // Apply pagination
-    const restaurants = await restaurantQuery
-      .skip(skip)
-      .limit(limit)
-      .select('-__v');
+    logger.info(`Query returned ${restaurants.length} restaurants, total: ${total}`);
     
-    // Count total matching documents for pagination
-    console.log('Query filters:', queryFilters);
-    const total = await Restaurant.countDocuments(queryFilters);
-    console.log('Total documents matching query:', total);
-    
+    // 8. Return the filtered list of restaurants as JSON
     res.status(200).json({
       success: true,
       count: restaurants.length,
-      pagination: {
-        total,
-        page,
-        pages: Math.ceil(total / limit),
-        limit
-      },
+      pagination: { total, page, pages: Math.ceil(total / limit), limit },
       data: restaurants
     });
   } catch (error) {
+    logger.error('Error in getAllRestaurants:', error);
     next(error);
   }
 };
@@ -246,103 +367,69 @@ export const getRestaurantsNearLocation = async (
     
     // Handle minRating filter (for minimum star rating)
     const minRating = parseFloat(req.query.minRating as string);
-    console.log('Near location - minRating param:', req.query.minRating);
-    console.log('Near location - Parsed minRating:', minRating, 'isNaN:', isNaN(minRating));
     if (!isNaN(minRating)) {
       matchFilters.rating = { $gte: minRating };
-      // Log the match filter we're using
-      console.log('Using rating filter near location:', matchFilters.rating);
+      console.log(`Setting minRating filter: rating >= ${minRating}`);
     }
     
     // Handle minReviews filter (for minimum number of reviews)
     const minReviews = parseInt(req.query.minReviews as string, 10);
     if (!isNaN(minReviews)) {
       matchFilters.reviewCount = { $gte: minReviews };
+      console.log(`Setting minReviews filter: reviewCount >= ${minReviews}`);
     }
     
-    console.log('Near location filters:', matchFilters);
+    console.log('Match filters:', JSON.stringify(matchFilters));
     
-    // Use a simpler approach with MongoDB aggregation pipeline that's robust against errors
-    // First, get the count using the $geoNear operator followed by $count
+    // Create base geoNear stage that will be used for both count and results
+    const geoNearStage = {
+      $geoNear: {
+        near: {
+          type: "Point",
+          coordinates: [lng, lat]
+        },
+        distanceField: "distanceInMeters",
+        maxDistance: distance,
+        spherical: true,
+        // *** Add query to geoNear stage to fix filtering issue ***
+        query: Object.keys(matchFilters).length > 0 ? matchFilters : {}
+      }
+    };
+    
+    // Now get the paginated results
+    let restaurants = [];
     let total = 0;
+    
     try {
+      // First, get the total count
       const countPipeline: any[] = [
-        {
-          $geoNear: {
-            near: {
-              type: "Point",
-              coordinates: [lng, lat]
-            },
-            distanceField: "distanceInMeters",
-            maxDistance: distance,
-            spherical: true
-          }
-        }
+        geoNearStage,
+        { $count: "total" }
       ];
       
-      // Add $match stage if we have additional filters
-      if (Object.keys(matchFilters).length > 0) {
-        countPipeline.push({ $match: matchFilters });
-        console.log('Added match filters to countPipeline:', matchFilters);
-      }
+      const countResult = await Restaurant.aggregate(countPipeline);
+      total = countResult.length > 0 ? countResult[0].total : 0;
+      console.log(`Total matched documents: ${total}`);
       
-      // Add count stage
-      countPipeline.push({ $count: "total" });
-      
-      console.log('Count pipeline:', JSON.stringify(countPipeline));
-      
-      // @ts-ignore - Bypass TypeScript checking for MongoDB aggregation pipeline
-      const geoQuery = await Restaurant.aggregate(countPipeline);
-      
-      console.log('Count query result:', geoQuery);
-      
-      // Get the total count from the query result
-      total = geoQuery.length > 0 ? geoQuery[0].total : 0;
-      console.log('Calculated total:', total);
-    } catch (error) {
-      logger.error(`Error counting nearby restaurants: ${error}`);
-      console.error('Full error:', error);
-      // Continue with total = 0 if there's an error
-    }
-    
-    // Now get the paginated results using the same $geoNear stage
-    // Simplify the aggregation pipeline to avoid projection issues
-    let restaurants = [];
-    try {
-      const pipeline: any[] = [
-        {
-          $geoNear: {
-            near: {
-              type: "Point",
-              coordinates: [lng, lat]
-            },
-            distanceField: "distanceInMeters",
-            maxDistance: distance,
-            spherical: true
-          }
-        },
-        // Add a simple $addFields stage instead of $project to avoid inclusion/exclusion conflicts
+      // Then get the results with pagination
+      const resultsPipeline: any[] = [
+        geoNearStage,
         {
           $addFields: {
             distanceInKm: { $divide: ["$distanceInMeters", 1000] }
           }
-        }
+        },
+        { $skip: skip },
+        { $limit: limit }
       ];
       
-      // Add $match stage if we have additional filters
-      if (Object.keys(matchFilters).length > 0) {
-        pipeline.push({ $match: matchFilters });
-      }
-      
-      // Add pagination stages
-      pipeline.push({ $skip: skip });
-      pipeline.push({ $limit: limit });
-      
-      // @ts-ignore - Bypass TypeScript checking for MongoDB aggregation pipeline
-      restaurants = await Restaurant.aggregate(pipeline);
+      restaurants = await Restaurant.aggregate(resultsPipeline);
+      console.log(`Retrieved ${restaurants.length} restaurants for page ${page}`);
     } catch (error) {
-      logger.error(`Error fetching nearby restaurants: ${error}`);
-      // Return empty array if there's an error
+      logger.error(`Error in getRestaurantsNearLocation: ${error}`);
+      console.error('Full error:', error);
+      // Return empty array on error
+      restaurants = [];
     }
     
     res.status(200).json({

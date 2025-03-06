@@ -50,7 +50,7 @@ export interface SearchParams {
   distance?: number;
   // New filter parameters
   openNow?: boolean;
-  maxDeliveryTime?: number;
+  deliveryUnder30?: boolean;
   minRating?: number;
   minReviews?: number;
 } 
