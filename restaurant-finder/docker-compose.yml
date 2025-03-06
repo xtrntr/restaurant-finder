@@ -24,9 +24,10 @@ services:
       - REQUEST_DELAY_MS=2000
       - MAX_RETRIES=5
       - CONCURRENT_REQUESTS=2
-      - COORDINATES_FILE=../data/coordinates.csv
+      - COORDINATES_FILE=/app/coords.csv
     volumes:
       - ./data:/app/data
+      - ./coords.csv:/app/coords.csv
     networks:
       - app-network
     restart: on-failure

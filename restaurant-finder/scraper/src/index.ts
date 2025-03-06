@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
-import path from 'path';
-import ScraperCoordinator from './services/ScraperCoordinator';
-import logger from './utils/logger';
+import path from 'node:path';
+import ScraperCoordinator from './services/ScraperCoordinator.js';
+import logger from './utils/logger.js';
 
 // Load environment variables
 dotenv.config();

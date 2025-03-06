@@ -6,10 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
-
-# Explicitly install a compatible version of p-retry
-RUN npm uninstall p-retry && npm install p-retry@3.0.1
+RUN npm ci
 
 # Copy the rest of the application
 COPY . .
@@ -20,11 +17,11 @@ RUN npm run build
 # Create logs directory
 RUN mkdir -p logs
 
-# Create a symlink from /coords.csv to /app/coords.csv
-RUN ln -sf /app/coords.csv /coords.csv
-
 # Set environment variables
 ENV NODE_ENV=production
 
-# Run the scraper
+# Expose the application port
+EXPOSE 4000
+
+# Run the application
 CMD ["node", "dist/index.js"] 

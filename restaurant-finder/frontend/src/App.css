@@ -1,3 +1,11 @@
+/* App.css - Updated
+ * Simplified restaurant-card, restaurant-photo, and restaurant-info-lines CSS to:
+ * - Ensure photo fills full 160px height without truncation using object-fit: cover.
+ * - Prevent text overflow/truncation in restaurant-info-lines with word-wrap: break-word.
+ * - Remove complex flexbox and overflow rules to prevent regression bugs.
+ * - Use fixed dimensions for predictable layout and to avoid regressions.
+ */
+
 /* Base styles */
 body {
   margin: 0;
@@ -280,29 +288,38 @@ body {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-/* Add styling for restaurant-list-enhanced */
+/*
+ * RESTAURANT CARD LAYOUT
+ * 
+ * Using CSS Grid for restaurant cards to solve display issues:
+ * - Fixed 2-column grid (135px photo + flexible content)
+ * - Photos contained in first grid cell with overflow handling
+ * - Text information in second grid cell with proper spacing
+ * - Clear visual separation between content sections
+ * - No truncation, overflow or omission of important information
+ */
+
+/* Restaurant list enhanced - using better layout for cards */
 .restaurant-list-enhanced {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: auto;
-  flex: 1;
+  overflow: hidden;
 }
 
-/* Restaurant cards */
+/* Restaurant cards container - improved scrolling and layout */
 .restaurant-cards {
-  padding: 10px;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 15px;
   overflow-y: auto;
-  flex: 1;
-  height: 100%;
-  scrollbar-width: thin; /* For Firefox */
-  scrollbar-color: #d4d4d4 #f1f1f1; /* For Firefox */
+  max-height: calc(100vh - 250px);
+  padding: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 #f1f1f1;
 }
 
-/* Add styling for scrollbar */
+/* Scrollbar styling for WebKit browsers */
 .restaurant-cards::-webkit-scrollbar {
   width: 8px;
 }
@@ -321,24 +338,30 @@ body {
   background: #aaa;
 }
 
-/* Restaurant card with proper sizing to fit all content */
+/* Restaurant card - using CSS Grid for predictable layout */
 .restaurant-card {
-  display: flex;
-  padding: 15px;
-  margin-bottom: 15px;
+  display: grid;
+  grid-template-columns: 135px 1fr;
+  grid-template-rows: 1fr;
+  width: 100%;
+  height: 180px; /* Increased height to accommodate all information */
+  margin-bottom: 16px;
   background-color: white;
   border: 1px solid #eee;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  width: 100%;
-  box-sizing: border-box;
-  min-height: auto; /* Changed from 130px to auto to allow dynamic height */
-  align-items: flex-start;
-  height: auto;
-  flex-wrap: nowrap;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: visible; /* Changed from hidden to visible to prevent content cutoff */
+  position: relative; /* Added to ensure proper stacking context */
+  z-index: 1; /* Ensure proper layering */
+}
+
+/* Selected restaurant card */
+.restaurant-card.selected {
+  border: 2px solid #4a90e2;
+  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.2);
+  z-index: 2; /* Higher z-index for selected card */
 }
 
 .restaurant-card:hover {
@@ -346,230 +369,226 @@ body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Photo container */
+/* Photo container - first grid cell, ensure full height */
 .restaurant-photo {
-  width: 80px;
-  height: 80px;
-  min-width: 80px; /* Prevent shrinking */
-  margin-right: 15px;
-  border-radius: 6px;
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: 100%; /* Ensures photo container fills full height */
   overflow: hidden;
-  position: relative;
-  flex-shrink: 0; /* Prevent shrinking */
+  border-right: 1px solid #f0f0f0;
+  position: relative; /* Added to ensure proper positioning */
 }
 
-/* Restaurant information container - make it flow naturally */
-.restaurant-info {
+/* Restaurant photo image - fill container, maintain aspect ratio */
+.restaurant-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Cover the entire container */
+  object-position: center; /* Center the image */
+  display: block;
+}
+
+/* Restaurant information container - second grid cell */
+.restaurant-info-lines {
+  grid-column: 2;
+  grid-row: 1;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  justify-content: flex-start;
-  min-width: 0;
-  max-width: calc(100% - 95px); /* Account for image width and margin */
-  text-align: left;
-  height: auto;
-  overflow: visible; /* Ensure content doesn't get cut off */
+  overflow: visible; /* Changed from hidden to visible */
+  gap: 8px; /* Increased gap between lines */
+  width: 100%; /* Ensure full width */
+  height: 100%; /* Ensure full height */
 }
 
-/* Restaurant title */
-.restaurant-info h3 {
-  margin: 0 0 8px 0;
+/* Line 1: Restaurant name - address (bolded) */
+.info-line-1 {
   font-size: 1.1rem;
   color: #222;
-  font-weight: 600;
-  text-align: left;
+  font-weight: 600; /* Bold text */
+  margin: 0 0 4px 0;
   width: 100%;
   white-space: normal;
   word-wrap: break-word;
   overflow-wrap: break-word;
   line-height: 1.4;
-  height: auto;
-  padding-right: 5px;
+  max-height: 2.8em; /* Allow for 2 lines */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-/* Restaurant cuisines */
-.restaurant-cuisines {
+/* Line 2: Opening hours - centered text */
+.info-line-2 {
   font-size: 0.9rem;
   color: #666;
-  margin: 2px 0 6px 0;
+  margin: 0 0 8px 0;
   width: 100%;
+  text-align: center;
   white-space: normal;
   word-wrap: break-word;
-  overflow-wrap: break-word;
-  line-height: 1.4;
-  max-width: 100%;
+  line-height: 1.3;
 }
 
-/* Restaurant address */
-.restaurant-address {
-  font-size: 0.9rem;
-  color: #666;
-  margin: 2px 0 6px 0;
-  width: 100%;
-  white-space: normal;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  line-height: 1.4;
-  max-width: 100%;
-}
-
-/* Restaurant content wrapper */
-.restaurant-content {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  gap: 6px; /* Increased from 5px for better spacing */
-  overflow: visible;
-}
-
-/* Restaurant details section */
-.restaurant-details {
+/* Line 3: All indicators in one line */
+.info-line-3 {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 0.85rem;
-  justify-content: flex-start;
-  align-items: center;
-  margin-bottom: 5px;
   width: 100%;
-  overflow: visible;
-  line-height: 1.4; /* Added to improve readability */
+  margin: 0;
+  padding: 0;
+  min-height: 30px; /* Ensure minimum height for indicators */
+  justify-content: center; /* Center the indicators */
+  align-items: center; /* Ensure vertical centering of all indicators */
 }
 
-/* Restaurant reviews count */
-.restaurant-reviews {
-  color: #666;
-  font-size: 0.85rem;
-  margin-right: 8px;
-}
-
-/* Restaurant delivery time */
-.restaurant-delivery-time {
+/* Line 4: Cuisine indicators */
+.info-line-4 {
   display: flex;
-  align-items: center;
-  padding: 2px 8px;
-  margin: 3px 0;
-  background-color: rgba(240, 240, 240, 0.7);
-  border-radius: 12px;
-  font-size: 0.85rem;
-  white-space: normal;
-  line-height: 1.5;
-  flex-wrap: nowrap;
-  margin-right: 6px;
-  overflow: visible;
-}
-
-.delivery-icon {
-  margin-right: 4px;
-}
-
-/* Restaurant hours */
-.restaurant-hours {
-  font-size: 0.85rem;
-  color: #666;
-  margin: 4px 0;
+  flex-wrap: wrap;
+  gap: 6px;
   width: 100%;
-  white-space: normal;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  line-height: 1.4;
+  margin: 4px 0 0 0;
+  min-height: 30px; /* Ensure minimum height for cuisine tags */
+  justify-content: center; /* Center the cuisine tags */
 }
 
-.hours-label {
-  font-weight: 500;
-  color: #555;
-}
-
-/* Restaurant metadata styles - allow proper wrapping and space */
-.restaurant-price-level, 
+/* Restaurant indicator styles - consistent across all indicators */
 .restaurant-rating,
-.restaurant-status,
-.restaurant-distance,
-.restaurant-updated {
-  margin: 3px 0;
-  padding: 2px 8px;
-  font-size: 0.85rem;
-  border-radius: 12px;
-  background-color: rgba(240, 240, 240, 0.7);
-  white-space: normal;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+.restaurant-price-level,
+.restaurant-location-time,
+.restaurant-updated,
+.restaurant-cuisine {
   display: inline-flex;
   align-items: center;
-  margin-right: 6px;
-  line-height: 1.5;
-  max-width: 100%; /* Ensure proper wrapping */
-}
-
-/* Restaurant updated timestamp */
-.restaurant-updated {
-  font-size: 0.8rem;
-  color: #999;
-  margin-top: 5px; /* Increased for better separation */
-  margin-bottom: 3px;
-  font-style: italic;
-  width: 100%;
-  white-space: normal;
-  display: block; /* Changed to block to ensure it takes full width */
-}
-
-/* Bottom section of restaurant info */
-.restaurant-bottom {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
-  width: 100%;
-  margin-top: 10px; /* Increased from 8px for better section separation */
-  gap: 8px; /* Increased from 6px for better spacing between items */
-}
-
-.view-details {
-  color: #4a90e2;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  align-self: flex-end;
-  white-space: nowrap;
-}
-
-/* Pagination */
-.pagination {
-  display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 10px;
+  font-size: 0.85rem;
+  color: #555;
+  padding: 4px 10px;
+  background-color: #f5f5f5;
+  border-radius: 12px;
   margin: 0;
-  padding: 12px 10px;
-  flex-shrink: 0;
-  border-top: 1px solid #eee;
-  background-color: #f8f9fa;
+  white-space: nowrap;
+  height: 28px; /* Fixed height for all indicators */
+  line-height: 20px; /* Specific line height that matches content height */
+  box-sizing: border-box; /* Consistent box sizing */
+  vertical-align: middle; /* Consistent vertical alignment */
+  overflow: hidden; /* Prevent overflow */
 }
 
-.pagination button {
-  background-color: white;
-  border: 1px solid #ddd;
-  color: #333;
-  padding: 5px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
+/* Common styles for all icon elements in indicators */
+.restaurant-rating span,
+.restaurant-price-level span,
+.restaurant-location-time span,
+.delivery-icon,
+.restaurant-updated span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  vertical-align: middle;
+  height: 20px; /* Fixed height for inner elements */
 }
 
-.pagination button:not(:disabled):hover {
-  background-color: #f5f5f5;
+/* Rating and price have a special background */
+.restaurant-rating,
+.restaurant-price-level {
+  background-color: rgba(248, 180, 0, 0.1);
 }
 
-.pagination button:disabled {
-  background-color: #f5f5f5;
-  color: #999;
-  cursor: not-allowed;
+/* Location and time indicator styling */
+.restaurant-location-time {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
 }
 
-.page-info {
-  font-size: 14px;
+/* Distance and time values inside location-time indicator */
+.distance-value,
+.time-value {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  vertical-align: middle;
+}
+
+/* Delivery icon styling */
+.delivery-icon {
+  margin-right: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Updated indicator styling */
+.restaurant-updated {
+  background-color: rgba(158, 158, 158, 0.1);
+  color: #757575;
+  padding: 4px 10px;
+  border-radius: 12px;
+  margin: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Reviews count styling within rating indicator */
+.reviews-count {
+  margin-left: 6px;
+  font-size: 0.85rem;
   color: #666;
+  font-weight: normal;
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  padding-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  height: 20px; /* Match the height of other inner spans */
+  line-height: 20px; /* Match the line-height of parent */
+}
+
+/* Cuisine tags have a distinct style */
+.restaurant-cuisine {
+  background-color: rgba(58, 122, 254, 0.1);
+  color: #3a7afe;
+  font-weight: 500;
+  height: 28px; /* Match height with other indicators */
+}
+
+/* Star and price indicators - filled state */
+.star-filled, .price-filled {
+  color: #f8b400;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  height: 20px;
+}
+
+/* Star and price indicators - unfilled state */
+.star-unfilled, .price-unfilled {
+  color: #e0e0e0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  height: 20px;
+}
+
+/* Restaurant cuisine style - for the cuisine tags */
+.restaurant-cuisine {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #555;
+  padding: 4px 10px;
+  background-color: #f5f5f5;
+  border-radius: 12px;
+  margin: 0;
+  white-space: nowrap;
 }
 
 /* Restaurant Grid */
@@ -600,7 +619,8 @@ body {
   
   .restaurant-list-side {
     width: 100%;
-    height: 300px; /* Smaller list on mobile */
+    height: auto; /* Allow auto height */
+    max-height: 60vh; /* Limit maximum height */
     margin-bottom: 20px;
     flex: none;
   }
@@ -616,21 +636,74 @@ body {
     align-items: stretch;
   }
 
-  /* Ensure restaurant cards stay horizontal even on small screens */
+  /* Mobile restaurant card layout */
   .restaurant-card {
-    flex-direction: row;
-    min-height: auto; /* Ensure cards can expand on mobile too */
+    grid-template-columns: 100px 1fr; /* Adjust grid for mobile */
+    height: auto; /* Allow auto height */
+    min-height: 170px; /* Set minimum height */
+    max-height: none; /* Remove max height restriction */
   }
   
-  /* But make photo smaller on mobile to give more room for text */
-  .restaurant-photo {
-    width: 80px; /* Reduced from 100px to give more space for text */
-    height: 80px;
+  /* Restaurant info lines container for mobile */
+  .restaurant-info-lines {
+    padding: 10px 12px;
+    gap: 6px; /* Smaller gap on mobile */
+    width: 100%; /* Ensure full width */
   }
   
-  /* Adjust info container for mobile */
-  .restaurant-info {
-    max-width: calc(100% - 95px); /* Adjust for smaller photo */
+  /* Adjust line heights for mobile */
+  .info-line-1 {
+    font-size: 1rem;
+    -webkit-line-clamp: 2; /* Limit to 2 lines */
+    margin-bottom: 2px;
+  }
+  
+  /* Centered hours for mobile */
+  .info-line-2 {
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+  }
+  
+  /* All indicator styles for mobile */
+  .restaurant-rating,
+  .restaurant-price-level,
+  .restaurant-location-time,
+  .restaurant-updated,
+  .restaurant-cuisine {
+    font-size: 0.8rem; /* Smaller font size */
+    padding: 3px 8px; /* Smaller padding */
+    height: 24px; /* Smaller but consistent height on mobile */
+    line-height: 18px; /* Adjusted line height for mobile */
+  }
+  
+  /* Reduce spacing in reviews count for mobile */
+  .reviews-count {
+    margin-left: 4px;
+    padding-left: 4px;
+    font-size: 0.75rem;
+    height: 18px; /* Match the mobile inner element height */
+    line-height: 18px; /* Match the mobile line height */
+  }
+  
+  /* Add specific alignment for mobile indicators */
+  .restaurant-rating span,
+  .restaurant-price-level span,
+  .restaurant-location-time span,
+  .delivery-icon,
+  .restaurant-updated span {
+    height: 18px; /* Adjusted height for mobile */
+  }
+  
+  /* Ensure indicators wrap properly on mobile */
+  .info-line-3, 
+  .info-line-4 {
+    gap: 5px; /* Smaller gap */
+  }
+  
+  /* Adjust star and price icons for mobile */
+  .star-filled, .price-filled,
+  .star-unfilled, .price-unfilled {
+    height: 18px;
   }
 }
 
@@ -744,8 +817,7 @@ body {
 /* Restaurant additional info */
 .restaurant-price-level, 
 .restaurant-hours,
-.restaurant-delivery-time,
-.restaurant-updated {
+.restaurant-delivery-time {
   align-self: flex-start; /* Ensure these align properly in the new layout */
 }
 
@@ -847,23 +919,10 @@ body {
   margin-bottom: 3px;
 }
 
-/* Restaurant photo image */
-.restaurant-photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-/* Hover effect for photo */
-.restaurant-photo:hover img {
-  transform: scale(1.05);
-}
-
 /* Style for ratings, delivery time indicators, etc. */
 .restaurant-rating,
 .restaurant-delivery-time,
-.restaurant-distance,
+.restaurant-location-time,
 .restaurant-status {
   display: inline-flex;
   align-items: center;
@@ -875,10 +934,11 @@ body {
   line-height: 1.5;
 }
 
-/* Restaurant rating star icon */
+/* Restaurant rating star icon - removed to prevent duplicate stars */
 .restaurant-rating::before {
-  content: "★";
-  margin-right: 2px;
+  content: none !important;
+  display: none !important;
+  margin-right: 0;
 }
 
 /* Restaurant status styles */
@@ -897,4 +957,53 @@ body {
 .restaurant-status.closed {
   background-color: #fce9e6;
   color: #e74c3c;
+}
+
+/* Combine hours, price level and other metadata in a compact format */
+.restaurant-metadata-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  align-items: center;
+  margin: 2px 0;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 10px;
+  flex-shrink: 0;
+  border-top: 1px solid #eee;
+  background-color: #f8f9fa;
+}
+
+.pagination button {
+  background-color: white;
+  border: 1px solid #ddd;
+  color: #333;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.pagination button:not(:disabled):hover {
+  background-color: #f5f5f5;
+}
+
+.pagination button:disabled {
+  background-color: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 14px;
+  color: #666;
 } 

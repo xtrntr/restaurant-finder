@@ -1,7 +1,7 @@
 import axios from 'axios';
 import mongoose from 'mongoose';
-import GrabScraper from '../GrabScraper';
-import Restaurant from '../../models/Restaurant';
+import GrabScraper from '../GrabScraper.js';
+import Restaurant from '../../models/Restaurant.js';
 
 // Mock axios and mongoose
 jest.mock('axios');

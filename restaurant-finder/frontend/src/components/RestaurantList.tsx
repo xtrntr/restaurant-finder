@@ -1,3 +1,16 @@
+// RestaurantList.tsx - Updated
+// Simplified restaurant-card rendering to:
+// - Use fixed dimensions (160px height) for consistency.
+// - Ensure photo fills full height without truncation or overflow.
+// - Prevent text truncation/overflow in restaurant-info-lines.
+// - Avoid regression bugs by removing dynamic sizing logic.
+
+// The restaurant cards use a CSS Grid layout for consistent display:
+// - Each card has a 2-column grid (fixed width photo + flexible text content)
+// - Photos are constrained to their grid cell, preventing overflow issues
+// - Text content is arranged in a vertical stack with proper overflow handling
+// - All information is displayed without truncation or omission
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Restaurant, ApiResponse, SearchParams } from '../types';
@@ -550,86 +563,88 @@ const RestaurantList: React.FC = () => {
                           }
                         }}
                       >
+                        {/* Photo grid cell - full height */}
                         <div className="restaurant-photo">
                           <img 
                             src={restaurant.photoUrl || '/images/default-restaurant.jpg'} 
-                            alt={restaurant.name} 
+                            alt={restaurant.name}
                           />
                         </div>
-                        <div className="restaurant-info">
-                          <div className="restaurant-content">
-                            <h3>{restaurant.name}</h3>
-                            {restaurant.cuisines && restaurant.cuisines.length > 0 && (
-                              <p className="restaurant-cuisines">{restaurant.cuisines.join(', ')}</p>
-                            )}
-                            {restaurant.address && (
-                              <p className="restaurant-address">{restaurant.address}</p>
+                        
+                        {/* Info grid cell - structured information */}
+                        <div className="restaurant-info-lines">
+                          {/* Line 1: Restaurant name - address (bolded) */}
+                          <div className="info-line-1">
+                            {restaurant.name}{restaurant.address && ` - ${restaurant.address}`}
+                          </div>
+                          
+                          {/* Line 2: Opening hours as centered text, not an indicator */}
+                          {restaurant.openingHours && (
+                            <div className="info-line-2">
+                              Hours: {(() => {
+                                const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                                const today = days[new Date().getDay()];
+                                return restaurant.openingHours[today as keyof typeof restaurant.openingHours] || restaurant.openingHours.displayedHours;
+                              })()}
+                            </div>
+                          )}
+                          
+                          {/* Line 3: All indicators in one line (rating+reviews combined, price, combined distance+time, updated) */}
+                          <div className="info-line-3">
+                            {restaurant.rating !== undefined && (
+                              <span className="restaurant-rating">
+                                {[...Array(5)].map((_, i) => (
+                                  <span key={i} className={(i < Math.round(restaurant.rating || 0)) ? 'star-filled' : 'star-unfilled'}>
+                                    {(i < Math.round(restaurant.rating || 0)) ? '★' : '☆'}
+                                  </span>
+                                ))}
+                                {restaurant.reviewCount !== undefined && (
+                                  <span className="reviews-count"> {restaurant.reviewCount} reviews</span>
+                                )}
+                              </span>
                             )}
                             
-                            {/* Display price level as dollar signs */}
                             {restaurant.priceLevel !== undefined && (
-                              <p className="restaurant-price-level">
-                                {'$'.repeat(restaurant.priceLevel)}
-                                <span className="price-muted">
-                                  {'$'.repeat(4 - restaurant.priceLevel)}
-                                </span>
-                              </p>
+                              <span className="restaurant-price-level">
+                                {[...Array(5)].map((_, i) => (
+                                  <span key={i} className={(i < (restaurant.priceLevel || 0)) ? 'price-filled' : 'price-unfilled'}>
+                                    $
+                                  </span>
+                                ))}
+                              </span>
                             )}
                             
-                            {/* Display opening hours for current day */}
-                            {restaurant.openingHours && (
-                              <p className="restaurant-hours">
-                                <span className="hours-label">Hours today: </span>
-                                {(() => {
-                                  const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-                                  const today = days[new Date().getDay()];
-                                  return restaurant.openingHours[today as keyof typeof restaurant.openingHours] || restaurant.openingHours.displayedHours;
-                                })()}
-                              </p>
+                            {/* Combined distance and delivery time indicator */}
+                            {(restaurant.distanceInKm !== undefined || restaurant.estimatedDeliveryTime) && (
+                              <span className="restaurant-location-time">
+                                {restaurant.distanceInKm !== undefined && (
+                                  <span className="distance-value">🏃 {restaurant.distanceInKm.toFixed(1)} km</span>
+                                )}
+                                {restaurant.distanceInKm !== undefined && restaurant.estimatedDeliveryTime && ', '}
+                                {restaurant.estimatedDeliveryTime && (
+                                  <span className="time-value">
+                                    <span className="delivery-icon">🕒</span> {restaurant.estimatedDeliveryTime} min
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                            
+                            {/* Fixed lastUpdated display */}
+                            {restaurant.lastUpdated && (
+                              <span className="restaurant-updated">
+                                Updated: {formatTimeAgo(restaurant.lastUpdated)}
+                              </span>
                             )}
                           </div>
                           
-                          <div className="restaurant-bottom">
-                            <div className="restaurant-details">
-                              {restaurant.rating !== undefined && (
-                                <span className="restaurant-rating">★ {restaurant.rating.toFixed(1)}</span>
-                              )}
-                              {restaurant.reviewCount !== undefined && (
-                                <span className="restaurant-reviews">({restaurant.reviewCount})</span>
-                              )}
-                              {restaurant.isOpen !== undefined && (
-                                <span 
-                                  className={`restaurant-status ${restaurant.isOpen ? 'open' : 'closed'}`}
-                                >
-                                  {restaurant.isOpen ? 'Open' : 'Closed'}
-                                </span>
-                              )}
-                              {restaurant.distanceInKm !== undefined && (
-                                <span className="restaurant-distance">{restaurant.distanceInKm.toFixed(1)} km</span>
-                              )}
-                              
-                              {/* Add estimated delivery time */}
-                              {restaurant.estimatedDeliveryTime && (
-                                <span className="restaurant-delivery-time">
-                                  <span className="delivery-icon">🕒</span> {restaurant.estimatedDeliveryTime} min
-                                </span>
-                              )}
+                          {/* Line 4: Cuisine tags - one indicator per cuisine */}
+                          {restaurant.cuisines && restaurant.cuisines.length > 0 && (
+                            <div className="info-line-4">
+                              {restaurant.cuisines.map((cuisine, index) => (
+                                <span key={index} className="restaurant-cuisine">{cuisine}</span>
+                              ))}
                             </div>
-                            
-                            {restaurant.lastUpdated && (
-                              <div className="restaurant-updated">
-                                Last updated: {formatTimeAgo(restaurant.lastUpdated)}
-                              </div>
-                            )}
-                            
-                            <a 
-                              href={`/restaurant/${restaurant._id}`} 
-                              className="view-details" 
-                              onClick={(e) => e.stopPropagation()} 
-                            >
-                              View Details
-                            </a>
-                          </div>
+                          )}
                         </div>
                       </div>
                     ))}

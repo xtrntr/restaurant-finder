@@ -1,10 +1,16 @@
 import axios from 'axios';
 import pRetry from 'p-retry';
 import pLimit from 'p-limit';
-import { GrabApiRequest, GrabApiResponse, GrabRestaurant } from '../types/grabApi';
-import logger from '../utils/logger';
-import Restaurant from '../models/Restaurant';
-import { IRestaurant } from '../models/Restaurant';
+import { GrabApiRequest, GrabApiResponse, GrabRestaurant } from '../types/grabApi.js';
+import logger from '../utils/logger.js';
+import Restaurant from '../models/Restaurant.js';
+import { IRestaurant } from '../models/Restaurant.js';
+
+// We'll define an interface for pRetry to use before it's loaded
+interface RetryOptions {
+  retries: number;
+  onFailedAttempt: (error: any) => void;
+}
 
 export default class GrabScraper {
   private readonly baseUrl = 'https://portal.grab.com/foodweb/v2/search';
@@ -125,14 +131,26 @@ export default class GrabScraper {
   private transformRestaurant(grabRestaurant: GrabRestaurant, area: string): IRestaurant {
     const { id, address, latlng, estimatedDeliveryTime, merchantBrief } = grabRestaurant;
     
+    // Extract the restaurant name and location parts if possible
+    // The format is typically "Restaurant Name - Location"
+    const nameText = merchantBrief.displayInfo.primaryText;
+    let name = nameText;
+    let locationAddress = '';
+    
+    const dashIndex = nameText.indexOf(' - ');
+    if (dashIndex > 0) {
+      name = nameText.substring(0, dashIndex).trim();
+      locationAddress = nameText.substring(dashIndex + 3).trim();
+    }
+    
     return new Restaurant({
       grabId: id,
-      name: merchantBrief.displayInfo.primaryText,
+      name: name,
       location: {
         type: 'Point',
         coordinates: [latlng.longitude, latlng.latitude] // MongoDB expects [longitude, latitude]
       },
-      address: address.name,
+      address: locationAddress || address.name, // Use extracted location or fallback to address.name
       cuisines: merchantBrief.cuisine || [],
       priceLevel: merchantBrief.priceTag,
       rating: merchantBrief.rating,
@@ -157,10 +175,16 @@ export default class GrabScraper {
   
   private async saveRestaurant(restaurant: IRestaurant): Promise<IRestaurant> {
     try {
+      // Convert to plain object to avoid _id issues with Mongoose
+      const restaurantData = restaurant.toObject();
+      
+      // Remove _id field to avoid updating immutable field
+      delete restaurantData._id;
+      
       // Use upsert to update if exists, or create if doesn't exist
       const result = await Restaurant.findOneAndUpdate(
         { grabId: restaurant.grabId },
-        restaurant,
+        restaurantData,
         { upsert: true, new: true }
       );
       

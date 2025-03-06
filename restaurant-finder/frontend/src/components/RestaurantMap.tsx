@@ -107,22 +107,27 @@ const MapMarkers = ({
         marker = L.marker(position, { icon, zIndexOffset: isSelected ? 1000 : 0 }).addTo(map);
         marker.on('click', () => onRestaurantSelect(restaurant));
 
-        const popup = L.popup({ closeOnClick: false }).setContent(`
+        const popup = L.popup({ 
+          closeOnClick: false,
+          className: 'restaurant-map-popup',
+          maxWidth: 280,
+          minWidth: 250
+        }).setContent(`
           <div class="restaurant-popup">
             <h3>${restaurant.name}</h3>
-            <p>${restaurant.address}</p>
+            <p>${restaurant.address || ''}</p>
             <p>${restaurant.cuisines.join(', ')}</p>
             <div class="popup-details">
               ${restaurant.priceLevel ? `<span class="popup-price">${'$'.repeat(restaurant.priceLevel)}</span>` : ''}
               ${restaurant.rating ? `<span class="popup-rating">★ ${restaurant.rating.toFixed(1)} ${restaurant.reviewCount ? ` (${restaurant.reviewCount})` : ''}</span>` : ''}
+              ${restaurant.isOpen !== undefined ? `<span class="popup-status ${restaurant.isOpen ? 'open' : 'closed'}">${restaurant.isOpen ? 'Open Now' : 'Closed'}</span>` : ''}
             </div>
             ${restaurant.openingHours ? `<p class="popup-hours"><strong>Hours today:</strong> ${(() => {
               const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
               const today = days[new Date().getDay()];
               return restaurant.openingHours[today as keyof typeof restaurant.openingHours] || restaurant.openingHours.displayedHours || 'N/A';
             })()}</p>` : ''}
-            ${restaurant.estimatedDeliveryTime ? `<p class="popup-delivery"><span>🕒</span> ${restaurant.estimatedDeliveryTime} min</p>` : ''}
-            ${restaurant.isOpen !== undefined ? `<p class="popup-status ${restaurant.isOpen ? 'open' : 'closed'}">${restaurant.isOpen ? 'Open Now' : 'Closed'}</p>` : ''}
+            ${restaurant.estimatedDeliveryTime ? `<p class="popup-delivery"><span>🕒</span> ${restaurant.estimatedDeliveryTime} min delivery</p>` : ''}
             <p class="popup-updated">Last updated: ${formatTimeAgo(restaurant.lastUpdated)}</p>
             <a href="/restaurant/${restaurant._id}">View Details</a>
           </div>
@@ -156,6 +161,32 @@ const MapMarkers = ({
       }, 200);
     }
   }, [selectedRestaurant]);
+
+  return null;
+};
+
+// MapCenterHandler component to handle center changes without affecting zoom
+const MapCenterHandler = ({ center }: { center: [number, number] }) => {
+  const map = useMap();
+  const prevCenterRef = useRef<[number, number]>(center);
+
+  useEffect(() => {
+    // Skip if the center hasn't changed
+    if (center[0] === prevCenterRef.current[0] && center[1] === prevCenterRef.current[1]) {
+      return;
+    }
+
+    console.log(`MapCenterHandler: Updating center to [${center[0]}, ${center[1]}] (preserving zoom: ${map.getZoom()})`);
+    
+    // Keep current zoom, only update center
+    map.setView(center, map.getZoom(), {
+      animate: true,
+      duration: 0.5
+    });
+    
+    // Update reference
+    prevCenterRef.current = center;
+  }, [center, map]);
 
   return null;
 };
@@ -284,6 +315,7 @@ const RestaurantMap: React.FC<RestaurantMapProps> = ({
           selectedRestaurant={selectedRestaurant}
           onRestaurantSelect={onRestaurantSelect}
         />
+        <MapCenterHandler center={center} />
         <MapBounds 
           restaurants={restaurants}
           fitBoundsFlag={fitBoundsFlag}
