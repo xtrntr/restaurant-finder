@@ -173,10 +173,13 @@ body {
 }
 
 .restaurant-map-side {
-  flex: 1;
-  height: 100%;
+  flex: 5;
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
   overflow: hidden;
+  height: 100%;
+  position: relative;
+  min-width: 0;
 }
 
 .restaurant-map-wrapper {
@@ -314,19 +317,22 @@ body {
 
 /* Restaurant list enhanced - using better layout for cards */
 .restaurant-list-enhanced {
-  flex: 1;
-  overflow: hidden; /* Container shouldn't scroll */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Restaurant cards container - improved scrolling and layout */
 .restaurant-cards {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 0 5px 15px 5px;
-  overflow-y: auto; /* Only this should scroll */
-  max-height: 100%; /* Take full height of parent */
-  box-sizing: border-box;
+  overflow-y: auto;
+  max-height: calc(100vh - 250px);
+  padding: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 #f1f1f1;
 }
 
 /* Scrollbar styling for WebKit browsers */
@@ -351,45 +357,51 @@ body {
 /* Restaurant card - using CSS Grid for predictable layout */
 .restaurant-card {
   display: grid;
-  grid-template-columns: 100px 1fr;
-  gap: 10px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 10px;
+  grid-template-columns: 1.5fr 2.5fr;
+  grid-template-rows: 1fr;
+  width: 100%;
+  min-height: 180px; /* Changed from fixed height to minimum height */
+  margin-bottom: 16px;
+  background-color: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  overflow: hidden;
-  height: 100px; /* Reduced height */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: visible; /* Keep all content visible */
+  position: relative;
+  z-index: 1;
 }
 
 .restaurant-card.selected {
-  border-color: #4a90e2;
-  background-color: #f5f9ff;
-  box-shadow: 0 0 0 1px #4a90e2;
+  border: 2px solid #4a90e2;
+  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.2);
+  z-index: 2; /* Higher z-index for selected card */
 }
 
 .restaurant-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Restaurant photo styling */
 .restaurant-photo {
-  width: 100px;
-  height: 80px; /* Reduced height */
-  border-radius: 4px;
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: 100%; /* Ensures photo container fills full height */
   overflow: hidden;
-  background-color: #f0f0f0;
+  border-right: 1px solid #f0f0f0;
+  position: relative;
 }
 
 .restaurant-photo img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  border-radius: 4px;
-  display: block;
+  object-fit: scale-down; /* Changed from cover to scale-down for better display */
+  object-position: center;
+  display: flex;
+  padding: 2px; /* Added small padding */
 }
 
 /* Restaurant info styling */
@@ -568,18 +580,22 @@ body {
 @media (max-width: 768px) {
   .restaurant-view-container {
     flex-direction: column;
-    height: calc(100vh - 200px);
+    height: auto;
+    min-height: auto;
   }
   
   .restaurant-list-side {
-    flex: 0 0 auto;
-    max-height: 50vh;
     width: 100%;
+    height: auto; /* Allow auto height */
+    max-height: 60vh; /* Limit maximum height */
+    margin-bottom: 20px;
+    flex: none;
   }
   
   .restaurant-map-side {
-    flex: 1;
-    height: 50vh;
+    width: 100%;
+    height: 450px; /* Larger map on mobile */
+    flex: none;
   }
   
   .search-row {
