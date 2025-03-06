@@ -341,7 +341,7 @@ body {
 /* Restaurant card - using CSS Grid for predictable layout */
 .restaurant-card {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 1.5fr 2.5fr;
   grid-template-rows: 1fr;
   width: 100%;
   min-height: 180px; /* Changed from fixed height to minimum height */
@@ -594,10 +594,25 @@ body {
 
   /* Mobile restaurant card layout */
   .restaurant-card {
-    grid-template-columns: 100px 1fr;
+    grid-template-columns: 1fr 2fr;
     min-height: 160px; /* Changed from fixed height to minimum height */
     height: auto; /* Allow card to expand as needed */
     overflow: visible; /* Keep all content visible */
+    min-height: 0;
+    max-height: none;
+  }
+  
+  /* Ensure photo scales properly on mobile */
+  .restaurant-photo {
+    width: 100%;
+    height: 100%;
+  }
+
+  .restaurant-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: scale-down; /* Ensure full photo is visible on mobile */
+    object-position: center;
   }
   
   /* Restaurant info lines container for mobile */
@@ -660,6 +675,22 @@ body {
   .star-unfilled, .price-unfilled {
     height: 18px; /* Match with parent height */
     font-size: 0.75rem; /* Slightly smaller on mobile */
+  }
+}
+
+/* Medium screens */
+@media (max-width: 1024px) {
+  .restaurant-card {
+    grid-template-columns: 1fr 2fr; /* Reduce photo width on medium screens */
+    min-height: 180px;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1200px) {
+  .restaurant-card {
+    grid-template-columns: 2fr 3fr; /* Increase photo width on large screens */
+    min-height: 180px;
   }
 }
 
