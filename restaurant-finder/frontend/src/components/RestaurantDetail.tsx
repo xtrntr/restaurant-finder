@@ -110,7 +110,6 @@ const RestaurantDetail: React.FC = () => {
                   restaurants={[restaurant]} 
                   center={[restaurant.location.coordinates[1], restaurant.location.coordinates[0]]}
                   zoom={15}
-                  height="300px"
                 />
               </div>
             )}

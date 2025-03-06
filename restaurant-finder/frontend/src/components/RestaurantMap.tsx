@@ -64,10 +64,30 @@ interface RestaurantMapProps {
   onRestaurantSelect?: (restaurant: Restaurant) => void;
   center?: [number, number];
   zoom?: number;
-  height?: string;
   onZoomChange?: (newZoom: number) => void;
   fitBoundsFlag?: number;
 }
+
+// This component handles zoom changes
+const MapController = ({ onZoomChange }: { onZoomChange?: (zoom: number) => void }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (!map || !onZoomChange) return;
+    
+    const handleZoom = () => {
+      onZoomChange(map.getZoom());
+    };
+    
+    map.on('zoom', handleZoom);
+    
+    return () => {
+      map.off('zoom', handleZoom);
+    };
+  }, [map, onZoomChange]);
+  
+  return null;
+};
 
 // MapMarkers component to handle marker creation and updates
 const MapMarkers = ({ 
@@ -244,23 +264,36 @@ const MapBounds = ({
       return;
     }
 
+    // Check if the map container is properly initialized and visible
+    const container = map.getContainer();
+    if (!container || container.clientWidth === 0 || container.clientHeight === 0) {
+      console.log('Step 2 [MapBounds]: Map container not properly initialized or not visible, skipping');
+      return;
+    }
+
     console.log('Step 2 [MapBounds]: Fitting bounds, restaurants:', restaurants.length, 'fitBoundsFlag:', fitBoundsFlag);
     isAnimatingRef.current = true;
 
     const bounds = createBoundsFromRestaurants(restaurants);
-    if (restaurants.length > 1) {
-      // Multi-restaurant case: 80x80 in 100x100 (10% padding all around)
-      const { clientWidth, clientHeight } = map.getContainer();
-      const padX = clientWidth * 0.1;  // 10% padding on left and right
-      const padY = clientHeight * 0.1; // 10% padding on top and bottom
-      console.log(`Step 2 [MapBounds]: Using 10% padding for 80x80 markers in 100x100 view: ${padX}x${padY} pixels`);
-      map.fitBounds(bounds, { padding: [padY, padX], animate: true, duration: 0.5, maxZoom: 15 });
-    } else if (restaurants.length === 1 && restaurants[0].location?.coordinates) {
-      // Single restaurant: center without padding
-      // Add additional check for location and coordinates
-      const coordinates = restaurants[0].location.coordinates;
-      const center: [number, number] = [coordinates[1], coordinates[0]];
-      map.setView(center, 15, { animate: true, duration: 0.5 });
+    
+    try {
+      if (restaurants.length > 1) {
+        // Multi-restaurant case: 80x80 in 100x100 (10% padding all around)
+        const { clientWidth, clientHeight } = container;
+        const padX = clientWidth * 0.1;  // 10% padding on left and right
+        const padY = clientHeight * 0.1; // 10% padding on top and bottom
+        console.log(`Step 2 [MapBounds]: Using 10% padding for 80x80 markers in 100x100 view: ${padX}x${padY} pixels`);
+        map.fitBounds(bounds, { padding: [padY, padX], animate: true, duration: 0.5, maxZoom: 15 });
+      } else if (restaurants.length === 1 && restaurants[0].location?.coordinates) {
+        // Single restaurant: center without padding
+        // Add additional check for location and coordinates
+        const coordinates = restaurants[0].location.coordinates;
+        const center: [number, number] = [coordinates[1], coordinates[0]];
+        map.setView(center, 15, { animate: true, duration: 0.5 });
+      }
+    } catch (error) {
+      console.error('Step 2 [MapBounds]: Error fitting bounds:', error);
+      isAnimatingRef.current = false;
     }
 
     const timeout = setTimeout(() => {
@@ -282,53 +315,59 @@ const RestaurantMap: React.FC<RestaurantMapProps> = ({
   onRestaurantSelect = () => {},
   center = [1.3521, 103.8198],
   zoom = 12,
-  height = '500px',
   onZoomChange,
   fitBoundsFlag = 0,
 }) => {
-  const [showNoMarkers, setShowNoMarkers] = useState(false);
-
+  const [showMarkers, setShowMarkers] = useState<boolean>(false);
+  
+  // Show markers after map is mounted
   useEffect(() => {
-    const validRestaurants = restaurants.filter(
-      r => r?.location?.coordinates?.length === 2 && 
-           typeof r.location.coordinates[0] === 'number' && 
-           typeof r.location.coordinates[1] === 'number'
-    );
-    setShowNoMarkers(restaurants.length > 0 && validRestaurants.length === 0);
-  }, [restaurants]);
+    // Set a small delay to ensure the map is fully loaded
+    const timer = setTimeout(() => {
+      setShowMarkers(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <div className="restaurant-map-container" style={{ height }}>
+    <div className="restaurant-map-wrapper">
       <MapContainer
         center={center}
         zoom={zoom}
-        style={{ width: '100%', height: '100%' }}
         zoomControl={false}
+        style={{ width: '100%', height: '100%' }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        <ZoomControl position="topright" />
-        <MapMarkers 
-          restaurants={restaurants}
-          selectedRestaurant={selectedRestaurant}
-          onRestaurantSelect={onRestaurantSelect}
-        />
+        <ZoomControl position="bottomright" />
+        
+        {/* Add controller for map interactions */}
+        {onZoomChange && <MapController onZoomChange={onZoomChange} />}
+        
+        {/* Handle map center updates */}
         <MapCenterHandler center={center} />
+        
+        {/* Handle bounds fitting */}
         <MapBounds 
-          restaurants={restaurants}
-          fitBoundsFlag={fitBoundsFlag}
+          restaurants={restaurants} 
+          fitBoundsFlag={fitBoundsFlag} 
           onZoomChange={onZoomChange}
         />
+        
+        {/* Only show markers when map is loaded */}
+        {showMarkers && (
+          <MapMarkers 
+            restaurants={restaurants} 
+            selectedRestaurant={selectedRestaurant} 
+            onRestaurantSelect={onRestaurantSelect}
+          />
+        )}
       </MapContainer>
-      {showNoMarkers && (
-        <div className="map-notification">
-          No valid coordinates found for current restaurants
-        </div>
-      )}
     </div>
   );
 };
 
-export default React.memo(RestaurantMap);
+export default RestaurantMap;

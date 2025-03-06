@@ -71,7 +71,7 @@ const RestaurantList: React.FC = () => {
   // Filter state
   const [filters, setFilters] = useState({
     openNow: false,
-    maxDeliveryTime: false,
+    deliveryUnder30: false,
     minRating: null as number | null,
     minReviews: null as number | null
   });
@@ -103,7 +103,7 @@ const RestaurantList: React.FC = () => {
       distance: searchParams.get('distance') ? parseFloat(searchParams.get('distance')!) : undefined,
       // Add filter parameters
       openNow: searchParams.get('openNow') === 'true',
-      maxDeliveryTime: searchParams.get('maxDeliveryTime') ? parseInt(searchParams.get('maxDeliveryTime')!, 10) : undefined,
+      deliveryUnder30: searchParams.get('deliveryUnder30') === 'true',
       minRating: searchParams.get('minRating') ? parseFloat(searchParams.get('minRating')!) : undefined,
       minReviews: searchParams.get('minReviews') ? parseInt(searchParams.get('minReviews')!, 10) : undefined
     };
@@ -230,7 +230,7 @@ const RestaurantList: React.FC = () => {
       
       // Add filter parameters to query
       if (params.openNow) queryParams.set('openNow', 'true');
-      if (params.maxDeliveryTime) queryParams.set('maxDeliveryTime', params.maxDeliveryTime.toString());
+      if (params.deliveryUnder30) queryParams.set('deliveryUnder30', 'true');
       if (params.minRating !== undefined && params.minRating !== null) {
         queryParams.set('minRating', params.minRating.toString());
       }
@@ -421,7 +421,7 @@ const RestaurantList: React.FC = () => {
       // Initialize filter states from URL
       setFilters({
         openNow: searchParams.get('openNow') === 'true',
-        maxDeliveryTime: searchParams.get('maxDeliveryTime') !== null,
+        deliveryUnder30: searchParams.get('deliveryUnder30') === 'true',
         minRating: searchParams.get('minRating') ? parseFloat(searchParams.get('minRating')!) : null,
         minReviews: searchParams.get('minReviews') ? parseInt(searchParams.get('minReviews')!, 10) : null
       });
@@ -437,7 +437,7 @@ const RestaurantList: React.FC = () => {
         // Update filter states from URL
         setFilters({
           openNow: searchParams.get('openNow') === 'true',
-          maxDeliveryTime: searchParams.get('maxDeliveryTime') !== null,
+          deliveryUnder30: searchParams.get('deliveryUnder30') === 'true',
           minRating: searchParams.get('minRating') ? parseFloat(searchParams.get('minRating')!) : null,
           minReviews: searchParams.get('minReviews') ? parseInt(searchParams.get('minReviews')!, 10) : null
         });
@@ -555,6 +555,8 @@ const RestaurantList: React.FC = () => {
 
   // Handle filter changes
   const handleFilterChange = (filterName: string, value: any) => {
+    console.log(`Filter changed: ${filterName} = ${value} (type: ${typeof value})`);
+    
     setFilters(prevFilters => ({
       ...prevFilters,
       [filterName]: value
@@ -572,9 +574,10 @@ const RestaurantList: React.FC = () => {
     // Apply the updated filter
     if (filterName === 'openNow') {
       newParams.openNow = value;
-    } else if (filterName === 'maxDeliveryTime') {
-      newParams.maxDeliveryTime = value ? 30 : undefined;
+    } else if (filterName === 'deliveryUnder30') {
+      newParams.deliveryUnder30 = value;
     } else if (filterName === 'minRating') {
+      console.log('Setting minRating param to:', value);
       newParams.minRating = value;
     } else if (filterName === 'minReviews') {
       newParams.minReviews = value;
@@ -584,6 +587,7 @@ const RestaurantList: React.FC = () => {
     const urlParams = new URLSearchParams();
     Object.entries(newParams).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
+        console.log(`Setting URL param: ${key} = ${value}`);
         urlParams.set(key, String(value));
       }
     });
@@ -598,25 +602,27 @@ const RestaurantList: React.FC = () => {
       {/* Search section */}
       <div className="search-section">
         <div className="search-container">
-          <form onSubmit={handleSearch} className="search-form">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Search by restaurant name or location (e.g., Clementi, Orchard, 120115)"
-              className="search-input"
-            />
-          </form>
+          <div className="search-row">
+            <form onSubmit={handleSearch} className="search-form">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Search restaurants or locations"
+                className="search-input"
+              />
+            </form>
           
-          {/* Add filter options component */}
-          <FilterOptions 
-            filters={filters} 
-            onFilterChange={handleFilterChange} 
-          />
+            {/* Add filter options component next to search bar */}
+            <FilterOptions 
+              filters={filters} 
+              onFilterChange={handleFilterChange} 
+            />
+          </div>
           
           <div className="search-help">
             <small>
-              Try searching for a restaurant name or location (e.g., "Pizza", "Clementi", or a postal code like "120115")
+              Try searching for restaurant names, cuisine types, or locations
             </small>
           </div>
         </div>
@@ -629,15 +635,34 @@ const RestaurantList: React.FC = () => {
       ) : (
         <>
           <div className="restaurant-view-container">
-            <div className="restaurant-list-side" ref={restaurantListRef}>
+            <div className="restaurant-list-side">
               <div className="results-header">
                 <h2>{totalRestaurants} restaurants found</h2>
+                
+                {/* Add pagination inside results-header */}
+                <div className="pagination">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    &lt;
+                  </button>
+                  <span className="page-info">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    &gt;
+                  </button>
+                </div>
               </div>
               
               <div className="restaurant-list-enhanced">
-                {restaurants.length > 0 ? (
-                  <div className="restaurant-cards">
-                    {restaurants.map((restaurant) => (
+                <div className="restaurant-cards">
+                  {restaurants.length > 0 ? (
+                    restaurants.map((restaurant) => (
                       <div
                         key={restaurant._id}
                         className={`restaurant-card ${selectedRestaurant?._id === restaurant._id ? 'selected' : ''}`}
@@ -733,60 +758,24 @@ const RestaurantList: React.FC = () => {
                           )}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="no-results">No restaurants found.</div>
-                )}
-              </div>
-              
-              {/* Move pagination controls inside the list side */}
-              {totalPages > 1 && (
-                <div className="pagination">
-                  <button
-                    onClick={() => handlePageChange(1)}
-                    disabled={currentPage === 1}
-                  >
-                    First
-                  </button>
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    Previous
-                  </button>
-                  <span className="page-info">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                  </button>
-                  <button
-                    onClick={() => handlePageChange(totalPages)}
-                    disabled={currentPage === totalPages}
-                  >
-                    Last
-                  </button>
+                    ))
+                  ) : (
+                    <div className="no-results">No restaurants found. Try a different search term.</div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
             
             <div className="restaurant-map-side">
-              <div className="restaurant-map-container">
-                <RestaurantMap 
-                  restaurants={restaurants}
-                  selectedRestaurant={selectedRestaurant}
-                  onRestaurantSelect={handleRestaurantSelect}
-                  center={mapCenter}
-                  zoom={mapZoom}
-                  height="100%"
-                  onZoomChange={handleZoomChange}
-                  fitBoundsFlag={fitBoundsFlag}
-                />
-              </div>
+              <RestaurantMap
+                restaurants={restaurants}
+                selectedRestaurant={selectedRestaurant}
+                onRestaurantSelect={handleRestaurantSelect}
+                center={mapCenter}
+                zoom={mapZoom}
+                onZoomChange={handleZoomChange}
+                fitBoundsFlag={fitBoundsFlag}
+              />
             </div>
           </div>
         </>
