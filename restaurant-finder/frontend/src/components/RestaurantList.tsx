@@ -53,6 +53,9 @@ const RestaurantList: React.FC = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>([1.3521, 103.8198]); // Default Singapore center
   const [mapZoom, setMapZoom] = useState<number>(12);
+  const [fitBoundsFlag, setFitBoundsFlag] = useState<number>(0);
+  // We still need the ref for the cleanup, but we use it less frequently
+  const fitBoundsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Use ref to track if initial load has happened
   const initialLoadDone = useRef(false);
@@ -199,6 +202,18 @@ const RestaurantList: React.FC = () => {
       if (params.limit) queryParams.set('limit', params.limit.toString());
       if (params.q) queryParams.set('q', params.q);
       
+      // Define a function to update the state with fetched restaurants
+      // and trigger bounds fitting with a proper delay
+      const updateRestaurantsAndFitBounds = (restaurants: Restaurant[]) => {
+        console.log('Step 4 [RestaurantList]: Setting restaurants, count:', restaurants.length);
+        
+        // Simply update restaurants state - the map will react to this change directly
+        setRestaurants(restaurants);
+        
+        // Increment fitBoundsFlag for completeness (the imperative MapBoundsEffect will handle this)
+        setFitBoundsFlag(prevFlag => prevFlag + 1);
+      };
+
       // Handle location-based search
       if (params.lat !== undefined && params.lng !== undefined) {
         queryParams.set('latitude', params.lat.toString());
@@ -226,7 +241,8 @@ const RestaurantList: React.FC = () => {
             cuisines: Array.isArray(restaurant.cuisines) ? restaurant.cuisines : []
           }));
           
-          setRestaurants(safeRestaurants);
+          // Update restaurants and fit bounds
+          updateRestaurantsAndFitBounds(safeRestaurants);
           
           // Use pagination data from the API response
           if (data.pagination) {
@@ -274,7 +290,8 @@ const RestaurantList: React.FC = () => {
           cuisines: Array.isArray(restaurant.cuisines) ? restaurant.cuisines : []
         }));
         
-        setRestaurants(safeRestaurants);
+        // Update restaurants and fit bounds
+        updateRestaurantsAndFitBounds(safeRestaurants);
         
         // The API returns count and pagination differently than we expected
         // Update to use the correct structure
@@ -301,14 +318,17 @@ const RestaurantList: React.FC = () => {
     }
   }, []);
   
-  // Handle page change - this is the only place we trigger data loading
+  // Handle page change
   const handlePageChange = (newPage: number) => {
-    if (newPage < 1 || newPage > totalPages) return;
+    if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
+    
+    // Set loading state first to provide immediate feedback
+    setLoading(true);
     
     const currentParams = getSearchParams();
     const isLocationSearch = currentParams.lat !== undefined && currentParams.lng !== undefined;
     
-    console.log(`Changing to page ${newPage} of ${totalPages} (${isLocationSearch ? 'location search' : 'regular search'})`);
+    console.log(`Step 4 [RestaurantList]: Changing to page ${newPage} of ${totalPages} (${isLocationSearch ? 'location search' : 'regular search'})`);
     
     // Update URL with new page
     const newParams = new URLSearchParams();
@@ -333,6 +353,12 @@ const RestaurantList: React.FC = () => {
     fetchRestaurants({
       ...currentParams,
       page: newPage
+    });
+    
+    // Scroll to top of the list for better user experience
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
     });
   };
   
@@ -372,71 +398,109 @@ const RestaurantList: React.FC = () => {
   
   // Handle restaurant selection
   const handleRestaurantSelect = (restaurant: Restaurant) => {
+    // Don't do anything if this restaurant is already selected
+    if (selectedRestaurant && selectedRestaurant._id === restaurant._id) {
+      return;
+    }
+    
+    // First update the selected restaurant state to highlight the marker
     setSelectedRestaurant(restaurant);
     
     // If the restaurant has coordinates, center the map on it
     if (restaurant.location && restaurant.location.coordinates) {
+      // Update the center to move the map to the selected restaurant
+      // Only update the center, don't change zoom
       setMapCenter([
         restaurant.location.coordinates[1],
         restaurant.location.coordinates[0]
       ]);
-      // Don't change the zoom level when selecting a restaurant
-      // This prevents the jarring zoom in/out effect
+      
+      // We don't change the zoom here to maintain the current zoom level
+      console.log(`Centering map on restaurant: ${restaurant.name} at ${restaurant.location.coordinates[1]}, ${restaurant.location.coordinates[0]} (keeping current zoom)`);
     }
     
     // Ensure the selected restaurant card is visible in the list
-    setTimeout(() => {
-      const card = restaurantRefs.current[restaurant._id];
-      if (card && restaurantListRef.current) {
-        const containerRect = restaurantListRef.current.getBoundingClientRect();
-        const cardRect = card.getBoundingClientRect();
-        
-        // Check if the card is not fully visible in the container
-        if (cardRect.top < containerRect.top || cardRect.bottom > containerRect.bottom) {
-          // Instead of scrollIntoView which affects the entire page,
-          // manually scroll only the container
-          const scrollContainer = restaurantListRef.current;
-          const scrollTop = scrollContainer.scrollTop;
-          
-          // Calculate desired scroll position
-          let targetScroll;
-          if (cardRect.top < containerRect.top) {
-            // Card is above visible area - scroll up
-            targetScroll = scrollTop - (containerRect.top - cardRect.top);
-          } else {
-            // Card is below visible area - scroll down
-            targetScroll = scrollTop + (cardRect.bottom - containerRect.bottom);
-          }
-          
-          // Smooth scroll to the target position
-          scrollContainer.scrollTo({
-            top: targetScroll,
-            behavior: 'smooth'
-          });
-        }
-      }
-    }, 100);
+    const card = restaurantRefs.current[restaurant._id];
+    if (card && restaurantListRef.current) {
+      // Ensure smooth scrolling to the selected card
+      setTimeout(() => {
+        card.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'nearest' 
+        });
+      }, 50);
+    }
   };
 
   // Update map center and zoom when doing location-based search
   useEffect(() => {
     const params = getSearchParams();
     if (params.lat && params.lng) {
-      setMapCenter([params.lat, params.lng]);
+      // Only update the center if it actually changed
+      const newCenter: [number, number] = [params.lat, params.lng];
+      if (newCenter[0] !== mapCenter[0] || newCenter[1] !== mapCenter[1]) {
+        setMapCenter(newCenter);
+      }
       
-      // Set appropriate zoom based on search distance
-      if (params.distance) {
-        // Rough approximation: smaller zoom for larger distances
-        if (params.distance > 5000) setMapZoom(12);
-        else if (params.distance > 2000) setMapZoom(13);
-        else if (params.distance > 1000) setMapZoom(14);
-        else setMapZoom(15);
-      } else {
-        setMapZoom(14); // Default zoom for location search
+      // Only update zoom for a new location search, not for other URL changes
+      if (searchParams.get('q') !== searchQuery || !initialLoadDone.current) {
+        // Set appropriate zoom based on search distance
+        let newZoom = 14; // Default zoom for location search
+        
+        if (params.distance) {
+          // Rough approximation: smaller zoom for larger distances
+          if (params.distance > 5000) newZoom = 12;
+          else if (params.distance > 2000) newZoom = 13;
+          else if (params.distance > 1000) newZoom = 14;
+          else newZoom = 15;
+        }
+        
+        setMapZoom(newZoom);
       }
     }
-  }, [getSearchParams]);
+  }, [getSearchParams, mapCenter, searchQuery, searchParams, initialLoadDone]);
   
+  // Handle map zoom changes
+  const handleZoomChange = (newZoom: number) => {
+    // Only update zoom state if it actually changed
+    if (mapZoom !== newZoom) {
+      setMapZoom(newZoom);
+    }
+  };
+
+  // Handle manually fitting bounds to all markers
+  const handleFitBounds = () => {
+    console.log('Manual fit bounds requested');
+    
+    // Check if we have restaurants with valid coordinates
+    const hasValidCoordinates = restaurants.some(r => 
+      r?.location?.coordinates && 
+      Array.isArray(r.location.coordinates) && 
+      r.location.coordinates.length === 2
+    );
+    
+    if (hasValidCoordinates) {
+      console.log('Manually triggering fit bounds with valid coordinates');
+      setFitBoundsFlag(prev => prev + 1);
+    } else {
+      console.warn('Cannot fit bounds: no restaurants with valid coordinates');
+      // Could show a toast or notification here
+    }
+  };
+
+  // Clean up timeouts on component unmount
+  useEffect(() => {
+    console.log('Step 4 [RestaurantList]: Setting up cleanup');
+    return () => {
+      // Clear any pending fit bounds timeouts
+      if (fitBoundsTimeoutRef.current) {
+        clearTimeout(fitBoundsTimeoutRef.current);
+        fitBoundsTimeoutRef.current = null;
+      }
+      console.log('Step 4 [RestaurantList]: Cleanup performed');
+    };
+  }, []);
+
   return (
     <div className="restaurant-list-container">
       {/* Search section */}
@@ -495,8 +559,12 @@ const RestaurantList: React.FC = () => {
                         <div className="restaurant-info">
                           <div className="restaurant-content">
                             <h3>{restaurant.name}</h3>
-                            <p className="restaurant-cuisines">{restaurant.cuisines.join(', ')}</p>
-                            <p className="restaurant-address">{restaurant.address}</p>
+                            {restaurant.cuisines && restaurant.cuisines.length > 0 && (
+                              <p className="restaurant-cuisines">{restaurant.cuisines.join(', ')}</p>
+                            )}
+                            {restaurant.address && (
+                              <p className="restaurant-address">{restaurant.address}</p>
+                            )}
                             
                             {/* Display price level as dollar signs */}
                             {restaurant.priceLevel !== undefined && (
@@ -522,36 +590,37 @@ const RestaurantList: React.FC = () => {
                           </div>
                           
                           <div className="restaurant-bottom">
-                            <div>
-                              <div className="restaurant-details">
-                                {restaurant.rating !== undefined && (
-                                  <span className="restaurant-rating">★ {restaurant.rating.toFixed(1)}</span>
-                                )}
-                                {restaurant.reviewCount !== undefined && (
-                                  <span className="restaurant-reviews">({restaurant.reviewCount})</span>
-                                )}
+                            <div className="restaurant-details">
+                              {restaurant.rating !== undefined && (
+                                <span className="restaurant-rating">★ {restaurant.rating.toFixed(1)}</span>
+                              )}
+                              {restaurant.reviewCount !== undefined && (
+                                <span className="restaurant-reviews">({restaurant.reviewCount})</span>
+                              )}
+                              {restaurant.isOpen !== undefined && (
                                 <span 
                                   className={`restaurant-status ${restaurant.isOpen ? 'open' : 'closed'}`}
                                 >
                                   {restaurant.isOpen ? 'Open' : 'Closed'}
                                 </span>
-                                {restaurant.distanceInKm !== undefined && (
-                                  <span className="restaurant-distance">{restaurant.distanceInKm.toFixed(1)} km</span>
-                                )}
-                              </div>
+                              )}
+                              {restaurant.distanceInKm !== undefined && (
+                                <span className="restaurant-distance">{restaurant.distanceInKm.toFixed(1)} km</span>
+                              )}
                               
                               {/* Add estimated delivery time */}
                               {restaurant.estimatedDeliveryTime && (
-                                <div className="restaurant-delivery-time">
-                                  <span className="delivery-icon">🕒</span> {restaurant.estimatedDeliveryTime} min delivery
-                                </div>
+                                <span className="restaurant-delivery-time">
+                                  <span className="delivery-icon">🕒</span> {restaurant.estimatedDeliveryTime} min
+                                </span>
                               )}
-                              
-                              {/* Update last updated date */}
+                            </div>
+                            
+                            {restaurant.lastUpdated && (
                               <div className="restaurant-updated">
                                 Last updated: {formatTimeAgo(restaurant.lastUpdated)}
                               </div>
-                            </div>
+                            )}
                             
                             <a 
                               href={`/restaurant/${restaurant._id}`} 
@@ -613,6 +682,8 @@ const RestaurantList: React.FC = () => {
                   center={mapCenter}
                   zoom={mapZoom}
                   height="100%"
+                  onZoomChange={handleZoomChange}
+                  fitBoundsFlag={fitBoundsFlag}
                 />
               </div>
             </div>

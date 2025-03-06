@@ -166,15 +166,118 @@ body {
   min-width: 0;
 }
 
+/* Map container styles */
 .restaurant-map-container {
-  width: 100%;
-  height: 100%;
   position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  
+  /* Performance optimizations */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
 }
 
-.restaurant-map-container .leaflet-container {
-  width: 100%;
+/* Style for map notifications */
+.map-notification {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Ensure the leaflet container is properly styled */
+.leaflet-container {
   height: 100%;
+  width: 100%;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+  z-index: 1;
+  
+  /* Prevent flickering during animations */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Make leaflet tiles render more smoothly */
+.leaflet-tile-container {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Make map panning smoother */
+.leaflet-map-pane {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Add styling for Leaflet zoom controls and fix common issues */
+.leaflet-control-zoom {
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+  background: #fff;
+  border-radius: 5px;
+}
+
+.leaflet-control-zoom a {
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.leaflet-touch .leaflet-control-zoom a {
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+}
+
+/* Ensure popup is properly styled */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  padding: 0;
+  min-width: 250px;
+  max-width: 280px;
+  width: auto;
+  transition: all 0.2s ease;
+}
+
+/* Fix popup close button position */
+.leaflet-popup-close-button {
+  top: 8px;
+  right: 8px;
+}
+
+/* Ensure marker icons have smooth transitions */
+.leaflet-marker-icon {
+  transition: transform 0.2s ease, filter 0.2s ease;
+  will-change: transform;
+}
+
+/* Add styling for the selected marker */
+.selected-marker-icon {
+  filter: hue-rotate(120deg);
+}
+
+/* When a popup is open, ensure it's above other map elements */
+.leaflet-popup {
+  z-index: 1001 !important;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 /* Add styling for restaurant-list-enhanced */
@@ -218,163 +321,216 @@ body {
   background: #aaa;
 }
 
+/* Restaurant card with proper sizing to fit all content */
 .restaurant-card {
   display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 15px;
   padding: 15px;
+  margin-bottom: 15px;
+  background-color: white;
   border: 1px solid #eee;
   border-radius: 8px;
-  background-color: #fff;
-  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
   width: 100%;
   box-sizing: border-box;
-  text-align: left;
-  min-height: 150px; /* Ensure minimum height for content */
+  min-height: auto; /* Changed from 130px to auto to allow dynamic height */
+  align-items: flex-start;
+  height: auto;
+  flex-wrap: nowrap;
 }
 
 .restaurant-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-color: #ccc;
 }
 
-.restaurant-card.selected {
-  background-color: #f0f8ff;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
-}
-
+/* Photo container */
 .restaurant-photo {
-  width: 120px; /* Increased from 100px to give more room for photo */
-  height: 120px; /* Fixed height to maintain aspect ratio */
-  margin: 0;
-  border-radius: 8px;
+  width: 80px;
+  height: 80px;
+  min-width: 80px; /* Prevent shrinking */
+  margin-right: 15px;
+  border-radius: 6px;
   overflow: hidden;
-  flex-shrink: 0;
-  align-self: center; /* Center vertically */
+  position: relative;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
-.restaurant-photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
+/* Restaurant information container - make it flow naturally */
 .restaurant-info {
   display: flex;
   flex-direction: column;
   flex: 1;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 5px;
-  padding: 2px 0;
+  justify-content: flex-start;
+  min-width: 0;
+  max-width: calc(100% - 95px); /* Account for image width and margin */
+  text-align: left;
+  height: auto;
+  overflow: visible; /* Ensure content doesn't get cut off */
 }
 
+/* Restaurant title */
 .restaurant-info h3 {
-  margin: 0 0 5px 0;
+  margin: 0 0 8px 0;
   font-size: 1.1rem;
   color: #222;
   font-weight: 600;
   text-align: left;
-  max-width: 100%; /* Ensure title doesn't overflow */
-  overflow-wrap: break-word;
-}
-
-.restaurant-cuisines,
-.restaurant-address {
-  margin: 0;
-  color: #666;
-  font-size: 0.9rem;
-  text-align: left;
-  max-width: 100%;
-  overflow-wrap: break-word;
+  width: 100%;
+  white-space: normal;
   word-wrap: break-word;
-}
-
-.restaurant-details {
-  display: flex;
-  gap: 10px;
-  font-size: 0.8rem;
-  justify-content: flex-start;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 3px;
+  overflow-wrap: break-word;
   line-height: 1.4;
+  height: auto;
+  padding-right: 5px;
 }
 
-.restaurant-rating {
-  color: #f39c12;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-}
-
-.restaurant-rating::before {
-  content: "★";
-  margin-right: 2px;
-}
-
-.restaurant-status {
-  padding: 3px 6px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  text-align: center;
-}
-
-.restaurant-status.open {
-  background-color: #e8f8f1;
-  color: #27ae60;
-}
-
-.restaurant-status.closed {
-  background-color: #fce9e6;
-  color: #e74c3c;
-}
-
-.restaurant-distance {
+/* Restaurant cuisines */
+.restaurant-cuisines {
+  font-size: 0.9rem;
   color: #666;
+  margin: 2px 0 6px 0;
+  width: 100%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+  max-width: 100%;
 }
 
-/* Main content wrapper inside restaurant-info */
+/* Restaurant address */
+.restaurant-address {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 2px 0 6px 0;
+  width: 100%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+  max-width: 100%;
+}
+
+/* Restaurant content wrapper */
 .restaurant-content {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  flex: 1;
   width: 100%;
+  gap: 6px; /* Increased from 5px for better spacing */
+  overflow: visible;
+}
+
+/* Restaurant details section */
+.restaurant-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.85rem;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 5px;
+  width: 100%;
+  overflow: visible;
+  line-height: 1.4; /* Added to improve readability */
+}
+
+/* Restaurant reviews count */
+.restaurant-reviews {
+  color: #666;
+  font-size: 0.85rem;
+  margin-right: 8px;
+}
+
+/* Restaurant delivery time */
+.restaurant-delivery-time {
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  margin: 3px 0;
+  background-color: rgba(240, 240, 240, 0.7);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  white-space: normal;
+  line-height: 1.5;
+  flex-wrap: nowrap;
+  margin-right: 6px;
+  overflow: visible;
+}
+
+.delivery-icon {
+  margin-right: 4px;
+}
+
+/* Restaurant hours */
+.restaurant-hours {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 4px 0;
+  width: 100%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+}
+
+.hours-label {
+  font-weight: 500;
+  color: #555;
+}
+
+/* Restaurant metadata styles - allow proper wrapping and space */
+.restaurant-price-level, 
+.restaurant-rating,
+.restaurant-status,
+.restaurant-distance,
+.restaurant-updated {
+  margin: 3px 0;
+  padding: 2px 8px;
+  font-size: 0.85rem;
+  border-radius: 12px;
+  background-color: rgba(240, 240, 240, 0.7);
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  line-height: 1.5;
+  max-width: 100%; /* Ensure proper wrapping */
+}
+
+/* Restaurant updated timestamp */
+.restaurant-updated {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 5px; /* Increased for better separation */
+  margin-bottom: 3px;
+  font-style: italic;
+  width: 100%;
+  white-space: normal;
+  display: block; /* Changed to block to ensure it takes full width */
 }
 
 /* Bottom section of restaurant info */
 .restaurant-bottom {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
   width: 100%;
-  margin-top: 5px;
+  margin-top: 10px; /* Increased from 8px for better section separation */
+  gap: 8px; /* Increased from 6px for better spacing between items */
 }
 
 .view-details {
-  margin-top: 5px;
-  margin-bottom: 0;
-  padding-top: 5px;
-  color: #3498db;
+  color: #4a90e2;
   text-decoration: none;
-  font-size: 0.8rem;
-  display: inline-block;
+  font-size: 0.9rem;
+  font-weight: 500;
   align-self: flex-end;
-}
-
-.restaurant-updated {
-  font-size: 0.75rem;
-  color: #888;
-  margin-bottom: 0;
-  margin-top: 0;
-  font-style: italic;
-  align-self: flex-start;
+  white-space: nowrap;
 }
 
 /* Pagination */
@@ -463,30 +619,70 @@ body {
   /* Ensure restaurant cards stay horizontal even on small screens */
   .restaurant-card {
     flex-direction: row;
+    min-height: auto; /* Ensure cards can expand on mobile too */
   }
   
   /* But make photo smaller on mobile to give more room for text */
   .restaurant-photo {
-    width: 100px;
-    height: 100px;
+    width: 80px; /* Reduced from 100px to give more space for text */
+    height: 80px;
+  }
+  
+  /* Adjust info container for mobile */
+  .restaurant-info {
+    max-width: calc(100% - 95px); /* Adjust for smaller photo */
   }
 }
 
 /* Add styles for the map popup */
 .restaurant-popup {
-  max-width: 250px;
+  max-width: 280px;
+  min-width: 250px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow: hidden;
+  padding: 2px;
 }
 
+/* Restaurant popup title */
 .restaurant-popup h3 {
-  margin: 0 0 8px;
-  font-size: 1rem;
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: #333;
+  width: 100%;
+  /* Allow proper wrapping for restaurant names */
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+  overflow: visible;
 }
 
 .restaurant-popup p {
   margin: 0 0 5px;
   font-size: 0.9rem;
   color: #666;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Allow popup text to wrap */
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.3;
+}
+
+/* Allow all popup elements to wrap properly */
+.restaurant-popup .popup-hours,
+.restaurant-popup .popup-updated,
+.restaurant-popup .popup-details,
+.restaurant-popup .popup-price,
+.restaurant-popup .popup-rating,
+.restaurant-popup .popup-delivery,
+.restaurant-popup .popup-status {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .restaurant-popup a {
@@ -495,10 +691,29 @@ body {
   color: #3498db;
   text-decoration: none;
   font-size: 0.9rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Allow link to wrap if needed */
+  white-space: normal;
 }
 
 .restaurant-popup a:hover {
   text-decoration: underline;
+}
+
+/* Adjust popup position for right side growth from bottom */
+.leaflet-popup-right .leaflet-popup-content-wrapper {
+  transform-origin: bottom right;
+}
+
+/* Make sure popup text doesn't overflow */
+.leaflet-popup-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  white-space: normal;
+  margin: 10px 12px;
 }
 
 /* Style for the selected marker on the map */
@@ -508,6 +723,10 @@ body {
 
 /* Results header at top of list widget */
 .results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
   padding: 12px 15px;
   background-color: #f8f9fa;
   border-bottom: 1px solid #eee;
@@ -626,4 +845,56 @@ body {
 /* Additional spacing adjustments */
 .restaurant-details, .restaurant-price-level, .restaurant-hours {
   margin-bottom: 3px;
+}
+
+/* Restaurant photo image */
+.restaurant-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+/* Hover effect for photo */
+.restaurant-photo:hover img {
+  transform: scale(1.05);
+}
+
+/* Style for ratings, delivery time indicators, etc. */
+.restaurant-rating,
+.restaurant-delivery-time,
+.restaurant-distance,
+.restaurant-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: rgba(240, 240, 240, 0.7);
+  margin-right: 6px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+/* Restaurant rating star icon */
+.restaurant-rating::before {
+  content: "★";
+  margin-right: 2px;
+}
+
+/* Restaurant status styles */
+.restaurant-status {
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.restaurant-status.open {
+  background-color: #e8f8f1;
+  color: #27ae60;
+}
+
+.restaurant-status.closed {
+  background-color: #fce9e6;
+  color: #e74c3c;
 } 
