@@ -54,8 +54,12 @@ export const getAllRestaurants = async (
     
     // Handle minRating filter (for minimum star rating)
     const minRating = parseFloat(req.query.minRating as string);
+    console.log('minRating param:', req.query.minRating);
+    console.log('Parsed minRating:', minRating, 'isNaN:', isNaN(minRating));
     if (!isNaN(minRating)) {
       queryFilters.rating = { $gte: minRating };
+      // Log the query filter we're using
+      console.log('Using rating filter:', queryFilters.rating);
     }
     
     // Handle minReviews filter (for minimum number of reviews)
@@ -83,7 +87,9 @@ export const getAllRestaurants = async (
       .select('-__v');
     
     // Count total matching documents for pagination
+    console.log('Query filters:', queryFilters);
     const total = await Restaurant.countDocuments(queryFilters);
+    console.log('Total documents matching query:', total);
     
     res.status(200).json({
       success: true,
@@ -240,8 +246,12 @@ export const getRestaurantsNearLocation = async (
     
     // Handle minRating filter (for minimum star rating)
     const minRating = parseFloat(req.query.minRating as string);
+    console.log('Near location - minRating param:', req.query.minRating);
+    console.log('Near location - Parsed minRating:', minRating, 'isNaN:', isNaN(minRating));
     if (!isNaN(minRating)) {
       matchFilters.rating = { $gte: minRating };
+      // Log the match filter we're using
+      console.log('Using rating filter near location:', matchFilters.rating);
     }
     
     // Handle minReviews filter (for minimum number of reviews)
@@ -273,18 +283,25 @@ export const getRestaurantsNearLocation = async (
       // Add $match stage if we have additional filters
       if (Object.keys(matchFilters).length > 0) {
         countPipeline.push({ $match: matchFilters });
+        console.log('Added match filters to countPipeline:', matchFilters);
       }
       
       // Add count stage
       countPipeline.push({ $count: "total" });
       
+      console.log('Count pipeline:', JSON.stringify(countPipeline));
+      
       // @ts-ignore - Bypass TypeScript checking for MongoDB aggregation pipeline
       const geoQuery = await Restaurant.aggregate(countPipeline);
       
+      console.log('Count query result:', geoQuery);
+      
       // Get the total count from the query result
       total = geoQuery.length > 0 ? geoQuery[0].total : 0;
+      console.log('Calculated total:', total);
     } catch (error) {
       logger.error(`Error counting nearby restaurants: ${error}`);
+      console.error('Full error:', error);
       // Continue with total = 0 if there's an error
     }
     
