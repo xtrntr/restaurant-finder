@@ -344,7 +344,7 @@ body {
   grid-template-columns: 135px 1fr;
   grid-template-rows: 1fr;
   width: 100%;
-  height: 180px; /* Increased height to accommodate all information */
+  min-height: 180px; /* Changed from fixed height to minimum height */
   margin-bottom: 16px;
   background-color: white;
   border: 1px solid #eee;
@@ -352,9 +352,9 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  overflow: visible; /* Changed from hidden to visible to prevent content cutoff */
-  position: relative; /* Added to ensure proper stacking context */
-  z-index: 1; /* Ensure proper layering */
+  overflow: visible; /* Keep all content visible */
+  position: relative;
+  z-index: 1;
 }
 
 /* Selected restaurant card */
@@ -377,87 +377,82 @@ body {
   height: 100%; /* Ensures photo container fills full height */
   overflow: hidden;
   border-right: 1px solid #f0f0f0;
-  position: relative; /* Added to ensure proper positioning */
+  position: relative;
 }
 
-/* Restaurant photo image - fill container, maintain aspect ratio */
+/* Restaurant photo image - allow proper containment */
 .restaurant-photo img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Cover the entire container */
-  object-position: center; /* Center the image */
+  object-fit: scale-down; /* Changed from contain to scale-down for better display */
+  object-position: center;
   display: block;
+  padding: 2px; /* Added small padding */
 }
 
 /* Restaurant information container - second grid cell */
 .restaurant-info-lines {
   grid-column: 2;
   grid-row: 1;
-  padding: 12px 16px;
+  padding: 4px 8px; /* Keep reduced padding to maximize space */
   display: flex;
   flex-direction: column;
-  overflow: visible; /* Changed from hidden to visible */
-  gap: 8px; /* Increased gap between lines */
-  width: 100%; /* Ensure full width */
-  height: 100%; /* Ensure full height */
+  overflow: visible; /* Keep all content visible */
+  gap: 2px; /* Keep reduced gap to minimize vertical space */
+  width: 100%;
 }
 
 /* Line 1: Restaurant name - address (bolded) */
 .info-line-1 {
-  font-size: 1.1rem;
+  font-size: 0.95rem; /* Slightly reduced from 1rem to save space */
   color: #222;
-  font-weight: 600; /* Bold text */
-  margin: 0 0 4px 0;
+  font-weight: 600;
+  margin: 0 0 1px 0; /* Keep reduced margin */
   width: 100%;
   white-space: normal;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  line-height: 1.4;
-  max-height: 2.8em; /* Allow for 2 lines */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-height: 1.2; /* Keep reduced line height */
 }
 
 /* Line 2: Opening hours - centered text */
 .info-line-2 {
-  font-size: 0.9rem;
+  font-size: 0.8rem; /* Reduced from 0.9rem to save space */
   color: #666;
-  margin: 0 0 8px 0;
+  margin: 0 0 2px 0; /* Reduced margin from 8px */
   width: 100%;
   text-align: center;
   white-space: normal;
   word-wrap: break-word;
-  line-height: 1.3;
+  line-height: 1.2; /* Reduced from 1.3 to save space */
 }
 
 /* Line 3: All indicators in one line */
 .info-line-3 {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 2px; /* Keep reduced gap */
   width: 100%;
   margin: 0;
   padding: 0;
-  min-height: 30px; /* Ensure minimum height for indicators */
-  justify-content: center; /* Center the indicators */
-  align-items: center; /* Ensure vertical centering of all indicators */
+  min-height: 0; /* Remove minimum height restriction */
+  justify-content: flex-start; /* Changed from center to flex-start for better space usage */
+  align-items: center;
 }
 
 /* Line 4: Cuisine indicators */
 .info-line-4 {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 2px; /* Keep reduced gap */
   width: 100%;
-  margin: 4px 0 0 0;
-  min-height: 30px; /* Ensure minimum height for cuisine tags */
-  justify-content: center; /* Center the cuisine tags */
+  margin: 2px 0 0 0; /* Keep reduced margin */
+  min-height: 0; /* Remove minimum height restriction */
+  justify-content: flex-start; /* Changed from center to flex-start for better space usage */
+  font-size: 0.7rem; /* Keep reduced font size */
 }
 
-/* Restaurant indicator styles - consistent across all indicators */
+/* Restaurant indicator styles - ensure they're visible */
 .restaurant-rating,
 .restaurant-price-level,
 .restaurant-location-time,
@@ -466,18 +461,17 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 0.7rem; /* Keep reduced font size */
   color: #555;
-  padding: 4px 10px;
+  padding: 1px 6px; /* Keep reduced padding */
   background-color: #f5f5f5;
-  border-radius: 12px;
-  margin: 0;
+  border-radius: 8px; /* Keep reduced border radius */
+  margin: 0 1px 1px 0; /* Added small margin between indicators */
   white-space: nowrap;
-  height: 28px; /* Fixed height for all indicators */
-  line-height: 20px; /* Specific line height that matches content height */
-  box-sizing: border-box; /* Consistent box sizing */
-  vertical-align: middle; /* Consistent vertical alignment */
-  overflow: hidden; /* Prevent overflow */
+  height: 18px; /* Reduced from 20px */
+  line-height: 18px; /* Matched with height */
+  box-sizing: border-box;
+  vertical-align: middle;
 }
 
 /* Common styles for all icon elements in indicators */
@@ -491,71 +485,29 @@ body {
   justify-content: center;
   line-height: 1;
   vertical-align: middle;
-  height: 20px; /* Fixed height for inner elements */
-}
-
-/* Rating and price have a special background */
-.restaurant-rating,
-.restaurant-price-level {
-  background-color: rgba(248, 180, 0, 0.1);
-}
-
-/* Location and time indicator styling */
-.restaurant-location-time {
-  background-color: rgba(76, 175, 80, 0.1);
-  color: #4caf50;
-}
-
-/* Distance and time values inside location-time indicator */
-.distance-value,
-.time-value {
-  display: inline-flex;
-  align-items: center;
-  height: 100%;
-  vertical-align: middle;
-}
-
-/* Delivery icon styling */
-.delivery-icon {
-  margin-right: 2px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Updated indicator styling */
-.restaurant-updated {
-  background-color: rgba(158, 158, 158, 0.1);
-  color: #757575;
-  padding: 4px 10px;
-  border-radius: 12px;
-  margin: 0;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  height: 18px; /* Reduced from 20px */
 }
 
 /* Reviews count styling within rating indicator */
 .reviews-count {
-  margin-left: 6px;
-  font-size: 0.85rem;
+  margin-left: 2px; /* Keep reduced from 6px */
+  padding-left: 2px; /* Keep reduced from 6px */
+  font-size: 0.7rem; /* Keep reduced from 0.85rem */
   color: #666;
   font-weight: normal;
   border-left: 1px solid rgba(0, 0, 0, 0.1);
-  padding-left: 6px;
   display: inline-flex;
   align-items: center;
-  height: 20px; /* Match the height of other inner spans */
-  line-height: 20px; /* Match the line-height of parent */
+  height: 18px; 
+  line-height: 18px;
 }
 
-/* Cuisine tags have a distinct style */
+/* Restaurant cuisine style - for the cuisine tags */
 .restaurant-cuisine {
   background-color: rgba(58, 122, 254, 0.1);
   color: #3a7afe;
   font-weight: 500;
-  height: 28px; /* Match height with other indicators */
+  height: 20px; /* Reduced from 28px to be consistent with earlier changes */
 }
 
 /* Star and price indicators - filled state */
@@ -582,11 +534,11 @@ body {
 .restaurant-cuisine {
   display: inline-flex;
   align-items: center;
-  font-size: 0.85rem;
+  font-size: 0.7rem; /* Reduced from 0.85rem to be consistent */
   color: #555;
-  padding: 4px 10px;
+  padding: 1px 6px; /* Reduced from 4px 10px to be consistent */
   background-color: #f5f5f5;
-  border-radius: 12px;
+  border-radius: 8px; /* Reduced from 12px to be consistent */
   margin: 0;
   white-space: nowrap;
 }
@@ -601,8 +553,11 @@ body {
 /* For Home page cards */
 .restaurant-grid .restaurant-card {
   display: flex;
-  padding: 15px;
+  padding: 4px 8px; /* Reduced from 15px to be consistent with main card padding */
   text-align: left;
+  min-height: 180px; /* Changed from fixed height to minimum height */
+  height: auto; /* Allow card to expand as needed */
+  overflow: visible; /* Keep all content visible */
 }
 
 .restaurant-grid .restaurant-card h3 {
@@ -638,30 +593,28 @@ body {
 
   /* Mobile restaurant card layout */
   .restaurant-card {
-    grid-template-columns: 100px 1fr; /* Adjust grid for mobile */
-    height: auto; /* Allow auto height */
-    min-height: 170px; /* Set minimum height */
-    max-height: none; /* Remove max height restriction */
+    grid-template-columns: 100px 1fr;
+    min-height: 160px; /* Changed from fixed height to minimum height */
+    height: auto; /* Allow card to expand as needed */
+    overflow: visible; /* Keep all content visible */
   }
   
   /* Restaurant info lines container for mobile */
   .restaurant-info-lines {
-    padding: 10px 12px;
-    gap: 6px; /* Smaller gap on mobile */
-    width: 100%; /* Ensure full width */
+    padding: 3px 6px; /* Reduced padding from 10px 12px */
+    gap: 1px; /* Reduced gap from 6px */
   }
   
   /* Adjust line heights for mobile */
   .info-line-1 {
-    font-size: 1rem;
-    -webkit-line-clamp: 2; /* Limit to 2 lines */
-    margin-bottom: 2px;
+    font-size: 0.9rem; /* Reduced from 1rem */
+    margin-bottom: 1px;
   }
   
   /* Centered hours for mobile */
   .info-line-2 {
-    font-size: 0.85rem;
-    margin-bottom: 6px;
+    font-size: 0.7rem; /* Reduced from 0.8rem */
+    margin-bottom: 1px;
   }
   
   /* All indicator styles for mobile */
@@ -670,19 +623,17 @@ body {
   .restaurant-location-time,
   .restaurant-updated,
   .restaurant-cuisine {
-    font-size: 0.8rem; /* Smaller font size */
-    padding: 3px 8px; /* Smaller padding */
-    height: 24px; /* Smaller but consistent height on mobile */
-    line-height: 18px; /* Adjusted line height for mobile */
+    font-size: 0.6rem; /* Reduced from 0.7rem */
+    padding: 1px 4px; /* Reduced from 2px 6px */
+    height: 16px; /* Reduced from 20px */
+    line-height: 14px; /* Adjusted for smaller height */
   }
   
   /* Reduce spacing in reviews count for mobile */
   .reviews-count {
-    margin-left: 4px;
-    padding-left: 4px;
-    font-size: 0.75rem;
-    height: 18px; /* Match the mobile inner element height */
-    line-height: 18px; /* Match the mobile line height */
+    font-size: 0.6rem; /* Reduced from 0.7rem */
+    height: 14px;
+    line-height: 14px;
   }
   
   /* Add specific alignment for mobile indicators */
@@ -697,7 +648,8 @@ body {
   /* Ensure indicators wrap properly on mobile */
   .info-line-3, 
   .info-line-4 {
-    gap: 5px; /* Smaller gap */
+    gap: 1px; /* Keep reduced gap */
+    justify-content: flex-start; /* Changed from center to flex-start for better space usage */
   }
   
   /* Adjust star and price icons for mobile */
@@ -1006,4 +958,22 @@ body {
 .page-info {
   font-size: 14px;
   color: #666;
+}
+
+/* Rating and price have a special background - restore this style */
+.restaurant-rating,
+.restaurant-price-level {
+  background-color: rgba(248, 180, 0, 0.1);
+}
+
+/* Location and time indicator styling - restore this style */
+.restaurant-location-time {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
+}
+
+/* Cuisine tags have a distinct style - restore this style */
+.restaurant-cuisine {
+  background-color: rgba(58, 122, 254, 0.1);
+  color: #3a7afe;
 } 
