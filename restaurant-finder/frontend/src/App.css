@@ -341,7 +341,7 @@ body {
 /* Restaurant card - using CSS Grid for predictable layout */
 .restaurant-card {
   display: grid;
-  grid-template-columns: 135px 1fr;
+  grid-template-columns: 240px 1fr;
   grid-template-rows: 1fr;
   width: 100%;
   min-height: 180px; /* Changed from fixed height to minimum height */
@@ -386,7 +386,7 @@ body {
   height: 100%;
   object-fit: scale-down; /* Changed from contain to scale-down for better display */
   object-position: center;
-  display: block;
+  display: flex;
   padding: 2px; /* Added small padding */
 }
 
@@ -431,12 +431,12 @@ body {
 .info-line-3 {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px; /* Keep reduced gap */
+  gap: 6px; /* Increased gap for more even spacing */
   width: 100%;
   margin: 0;
   padding: 0;
   min-height: 0; /* Remove minimum height restriction */
-  justify-content: flex-start; /* Changed from center to flex-start for better space usage */
+  justify-content: center; /* Changed to center for more even distribution */
   align-items: center;
 }
 
@@ -444,12 +444,11 @@ body {
 .info-line-4 {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px; /* Keep reduced gap */
+  gap: 6px; /* Match gap with info-line-3 for consistency */
   width: 100%;
-  margin: 2px 0 0 0; /* Keep reduced margin */
+  margin: 4px 0 0 0; /* Slightly increased margin */
   min-height: 0; /* Remove minimum height restriction */
-  justify-content: flex-start; /* Changed from center to flex-start for better space usage */
-  font-size: 0.7rem; /* Keep reduced font size */
+  justify-content: center; /* Center cuisine tags */
 }
 
 /* Restaurant indicator styles - ensure they're visible */
@@ -461,15 +460,15 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem; /* Keep reduced font size */
+  font-size: 0.7rem;
   color: #555;
-  padding: 1px 6px; /* Keep reduced padding */
+  padding: 1px 6px;
   background-color: #f5f5f5;
-  border-radius: 8px; /* Keep reduced border radius */
-  margin: 0 1px 1px 0; /* Added small margin between indicators */
+  border-radius: 8px;
+  margin: 0; /* Remove margins to use gap exclusively for spacing */
   white-space: nowrap;
-  height: 18px; /* Reduced from 20px */
-  line-height: 18px; /* Matched with height */
+  height: 20px; /* Consistent height for all indicators */
+  line-height: 20px; /* Match line height with height */
   box-sizing: border-box;
   vertical-align: middle;
 }
@@ -485,21 +484,21 @@ body {
   justify-content: center;
   line-height: 1;
   vertical-align: middle;
-  height: 18px; /* Reduced from 20px */
+  height: 20px; /* Match with parent height of 20px */
 }
 
 /* Reviews count styling within rating indicator */
 .reviews-count {
-  margin-left: 2px; /* Keep reduced from 6px */
-  padding-left: 2px; /* Keep reduced from 6px */
-  font-size: 0.7rem; /* Keep reduced from 0.85rem */
+  margin-left: 3px; /* Slightly increased for better spacing */
+  padding-left: 3px; /* Slightly increased for better spacing */
+  font-size: 0.7rem;
   color: #666;
   font-weight: normal;
   border-left: 1px solid rgba(0, 0, 0, 0.1);
   display: inline-flex;
   align-items: center;
-  height: 18px; 
-  line-height: 18px;
+  height: 20px; /* Match with parent height */
+  line-height: 20px; /* Match with height */
 }
 
 /* Restaurant cuisine style - for the cuisine tags */
@@ -507,7 +506,7 @@ body {
   background-color: rgba(58, 122, 254, 0.1);
   color: #3a7afe;
   font-weight: 500;
-  height: 20px; /* Reduced from 28px to be consistent with earlier changes */
+  /* No height override here to maintain consistency */
 }
 
 /* Star and price indicators - filled state */
@@ -517,7 +516,8 @@ body {
   align-items: center;
   justify-content: center;
   vertical-align: middle;
-  height: 20px;
+  height: 20px; /* Match with parent */
+  font-size: 0.8rem; /* Consistent size for icons */
 }
 
 /* Star and price indicators - unfilled state */
@@ -527,7 +527,8 @@ body {
   align-items: center;
   justify-content: center;
   vertical-align: middle;
-  height: 20px;
+  height: 20px; /* Match with parent */
+  font-size: 0.8rem; /* Consistent size for icons */
 }
 
 /* Restaurant cuisine style - for the cuisine tags */
@@ -623,17 +624,19 @@ body {
   .restaurant-location-time,
   .restaurant-updated,
   .restaurant-cuisine {
-    font-size: 0.6rem; /* Reduced from 0.7rem */
-    padding: 1px 4px; /* Reduced from 2px 6px */
-    height: 16px; /* Reduced from 20px */
-    line-height: 14px; /* Adjusted for smaller height */
+    font-size: 0.65rem; /* Slightly smaller font on mobile */
+    padding: 1px 5px; /* Slightly reduced padding */
+    height: 18px; /* Consistent smaller height for mobile */
+    line-height: 18px; /* Match line height */
   }
   
   /* Reduce spacing in reviews count for mobile */
   .reviews-count {
-    font-size: 0.6rem; /* Reduced from 0.7rem */
-    height: 14px;
-    line-height: 14px;
+    font-size: 0.65rem; /* Match with indicator font size */
+    height: 18px; /* Match with parent height */
+    line-height: 18px;
+    margin-left: 2px;
+    padding-left: 2px;
   }
   
   /* Add specific alignment for mobile indicators */
@@ -642,20 +645,21 @@ body {
   .restaurant-location-time span,
   .delivery-icon,
   .restaurant-updated span {
-    height: 18px; /* Adjusted height for mobile */
+    height: 18px; /* Match with parent mobile height */
   }
   
   /* Ensure indicators wrap properly on mobile */
   .info-line-3, 
   .info-line-4 {
-    gap: 1px; /* Keep reduced gap */
-    justify-content: flex-start; /* Changed from center to flex-start for better space usage */
+    gap: 4px; /* Reduced gap for mobile, but still adequate */
+    justify-content: center; /* Keep centered on mobile */
   }
   
   /* Adjust star and price icons for mobile */
   .star-filled, .price-filled,
   .star-unfilled, .price-unfilled {
-    height: 18px;
+    height: 18px; /* Match with parent height */
+    font-size: 0.75rem; /* Slightly smaller on mobile */
   }
 }
 

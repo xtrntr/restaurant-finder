@@ -617,13 +617,13 @@ const RestaurantList: React.FC = () => {
                             {/* Combined distance and delivery time indicator */}
                             {(restaurant.distanceInKm !== undefined || restaurant.estimatedDeliveryTime) && (
                               <span className="restaurant-location-time">
-                                {restaurant.distanceInKm !== undefined && (
+                                {restaurant.distanceInKm !== undefined && restaurant.distanceInKm >= 0.1 && (
                                   <span className="distance-value">🏃 {restaurant.distanceInKm.toFixed(1)} km</span>
                                 )}
-                                {restaurant.distanceInKm !== undefined && restaurant.estimatedDeliveryTime && ', '}
+                                {restaurant.distanceInKm !== undefined && restaurant.distanceInKm >= 0.1 && restaurant.estimatedDeliveryTime && ', '}
                                 {restaurant.estimatedDeliveryTime && (
                                   <span className="time-value">
-                                    <span className="delivery-icon">🕒</span> {restaurant.estimatedDeliveryTime} min
+                                    <span className="delivery-icon">🕒 </span> {restaurant.estimatedDeliveryTime} min
                                   </span>
                                 )}
                               </span>

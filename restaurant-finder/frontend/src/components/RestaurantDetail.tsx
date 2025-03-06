@@ -101,7 +101,7 @@ const RestaurantDetail: React.FC = () => {
             <h2>Location</h2>
             <p className="address">{restaurant.address}</p>
             <p className="area">Area: {restaurant.area}</p>
-            {restaurant.distanceInKm !== undefined && (
+            {restaurant.distanceInKm !== undefined && restaurant.distanceInKm >= 0.1 && (
               <p className="distance">Distance: {restaurant.distanceInKm.toFixed(1)} km</p>
             )}
             {restaurant.location && (
