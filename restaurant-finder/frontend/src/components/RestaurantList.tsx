@@ -16,6 +16,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Restaurant, ApiResponse, SearchParams } from '../types';
 import { geocodeAddress } from '../services/GeocodeService';
 import RestaurantMap from './RestaurantMap';
+import FilterOptions from './FilterOptions';
 
 // Helper function to format date as "X time ago"
 const formatTimeAgo = (dateString: string): string => {
@@ -67,6 +68,13 @@ const RestaurantList: React.FC = () => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([1.3521, 103.8198]); // Default Singapore center
   const [mapZoom, setMapZoom] = useState<number>(12);
   const [fitBoundsFlag, setFitBoundsFlag] = useState<number>(0);
+  // Filter state
+  const [filters, setFilters] = useState({
+    openNow: false,
+    maxDeliveryTime: false,
+    minRating: null as number | null,
+    minReviews: null as number | null
+  });
   // We still need the ref for the cleanup, but we use it less frequently
   const fitBoundsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -92,7 +100,12 @@ const RestaurantList: React.FC = () => {
       q: searchParams.get('q') || undefined,
       lat: searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : undefined,
       lng: searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : undefined,
-      distance: searchParams.get('distance') ? parseFloat(searchParams.get('distance')!) : undefined
+      distance: searchParams.get('distance') ? parseFloat(searchParams.get('distance')!) : undefined,
+      // Add filter parameters
+      openNow: searchParams.get('openNow') === 'true',
+      maxDeliveryTime: searchParams.get('maxDeliveryTime') ? parseInt(searchParams.get('maxDeliveryTime')!, 10) : undefined,
+      minRating: searchParams.get('minRating') ? parseFloat(searchParams.get('minRating')!) : undefined,
+      minReviews: searchParams.get('minReviews') ? parseInt(searchParams.get('minReviews')!, 10) : undefined
     };
   }, [searchParams]);
   
@@ -214,6 +227,16 @@ const RestaurantList: React.FC = () => {
       if (params.page) queryParams.set('page', params.page.toString());
       if (params.limit) queryParams.set('limit', params.limit.toString());
       if (params.q) queryParams.set('q', params.q);
+      
+      // Add filter parameters to query
+      if (params.openNow) queryParams.set('openNow', 'true');
+      if (params.maxDeliveryTime) queryParams.set('maxDeliveryTime', params.maxDeliveryTime.toString());
+      if (params.minRating !== undefined && params.minRating !== null) {
+        queryParams.set('minRating', params.minRating.toString());
+      }
+      if (params.minReviews !== undefined && params.minReviews !== null) {
+        queryParams.set('minReviews', params.minReviews.toString());
+      }
       
       // Define a function to update the state with fetched restaurants
       // and trigger bounds fitting with a proper delay
@@ -346,12 +369,12 @@ const RestaurantList: React.FC = () => {
     // Update URL with new page
     const newParams = new URLSearchParams();
     
-    // Copy all existing params
+    // Copy all existing params, including filter parameters
     Object.entries({
       ...currentParams,
       page: newPage
     }).forEach(([key, value]) => {
-      if (value !== undefined) {
+      if (value !== undefined && value !== null) {
         newParams.set(key, String(value));
       }
     });
@@ -394,6 +417,14 @@ const RestaurantList: React.FC = () => {
       if (searchParams.get('lat') && searchParams.get('lng')) {
         setSearchingNearby(true);
       }
+      
+      // Initialize filter states from URL
+      setFilters({
+        openNow: searchParams.get('openNow') === 'true',
+        maxDeliveryTime: searchParams.get('maxDeliveryTime') !== null,
+        minRating: searchParams.get('minRating') ? parseFloat(searchParams.get('minRating')!) : null,
+        minReviews: searchParams.get('minReviews') ? parseInt(searchParams.get('minReviews')!, 10) : null
+      });
     } else if (!isManualPageChange.current) {
       // URL changed externally (like browser back/forward) - handle it
       console.log('URL changed externally, updating page');
@@ -402,6 +433,14 @@ const RestaurantList: React.FC = () => {
         setCurrentPage(pageParam);
         const params = getSearchParams();
         fetchRestaurants(params);
+        
+        // Update filter states from URL
+        setFilters({
+          openNow: searchParams.get('openNow') === 'true',
+          maxDeliveryTime: searchParams.get('maxDeliveryTime') !== null,
+          minRating: searchParams.get('minRating') ? parseFloat(searchParams.get('minRating')!) : null,
+          minReviews: searchParams.get('minReviews') ? parseInt(searchParams.get('minReviews')!, 10) : null
+        });
       }
     }
     
@@ -514,6 +553,46 @@ const RestaurantList: React.FC = () => {
     };
   }, []);
 
+  // Handle filter changes
+  const handleFilterChange = (filterName: string, value: any) => {
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      [filterName]: value
+    }));
+    
+    // Apply filters immediately
+    const currentParams = getSearchParams();
+    
+    // Create new search parameters with current filters
+    const newParams: SearchParams = {
+      ...currentParams,
+      page: 1, // Reset to first page when filters change
+    };
+    
+    // Apply the updated filter
+    if (filterName === 'openNow') {
+      newParams.openNow = value;
+    } else if (filterName === 'maxDeliveryTime') {
+      newParams.maxDeliveryTime = value ? 30 : undefined;
+    } else if (filterName === 'minRating') {
+      newParams.minRating = value;
+    } else if (filterName === 'minReviews') {
+      newParams.minReviews = value;
+    }
+    
+    // Build URL parameters
+    const urlParams = new URLSearchParams();
+    Object.entries(newParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        urlParams.set(key, String(value));
+      }
+    });
+    
+    // Update URL and trigger fetch
+    navigate(`/restaurants?${urlParams.toString()}`);
+    fetchRestaurants(newParams);
+  };
+
   return (
     <div className="restaurant-list-container">
       {/* Search section */}
@@ -528,6 +607,13 @@ const RestaurantList: React.FC = () => {
               className="search-input"
             />
           </form>
+          
+          {/* Add filter options component */}
+          <FilterOptions 
+            filters={filters} 
+            onFilterChange={handleFilterChange} 
+          />
+          
           <div className="search-help">
             <small>
               Try searching for a restaurant name or location (e.g., "Pizza", "Clementi", or a postal code like "120115")

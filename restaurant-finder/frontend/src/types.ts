@@ -48,4 +48,9 @@ export interface SearchParams {
   lat?: number;
   lng?: number;
   distance?: number;
+  // New filter parameters
+  openNow?: boolean;
+  maxDeliveryTime?: number;
+  minRating?: number;
+  minReviews?: number;
 } 

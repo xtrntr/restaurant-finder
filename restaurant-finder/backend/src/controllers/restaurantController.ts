@@ -40,6 +40,30 @@ export const getAllRestaurants = async (
       queryFilters.cuisines = cuisine; // Assuming cuisines is an array in the schema
     }
     
+    // Handle openNow filter
+    const openNow = req.query.openNow === 'true';
+    if (openNow) {
+      queryFilters.isOpen = true;
+    }
+    
+    // Handle maxDeliveryTime filter (for delivery under 30 mins)
+    const maxDeliveryTime = parseInt(req.query.maxDeliveryTime as string, 10);
+    if (!isNaN(maxDeliveryTime)) {
+      queryFilters.estimatedDeliveryTime = { $lte: maxDeliveryTime };
+    }
+    
+    // Handle minRating filter (for minimum star rating)
+    const minRating = parseFloat(req.query.minRating as string);
+    if (!isNaN(minRating)) {
+      queryFilters.rating = { $gte: minRating };
+    }
+    
+    // Handle minReviews filter (for minimum number of reviews)
+    const minReviews = parseInt(req.query.minReviews as string, 10);
+    if (!isNaN(minReviews)) {
+      queryFilters.reviewCount = { $gte: minReviews };
+    }
+    
     console.log('Search filters:', queryFilters);
     
     let restaurantQuery = Restaurant.find(queryFilters);
@@ -199,11 +223,40 @@ export const getRestaurantsNearLocation = async (
       return;
     }
     
+    // Build additional match filters for our query
+    const matchFilters: any = {};
+    
+    // Handle openNow filter
+    const openNow = req.query.openNow === 'true';
+    if (openNow) {
+      matchFilters.isOpen = true;
+    }
+    
+    // Handle maxDeliveryTime filter (for delivery under 30 mins)
+    const maxDeliveryTime = parseInt(req.query.maxDeliveryTime as string, 10);
+    if (!isNaN(maxDeliveryTime)) {
+      matchFilters.estimatedDeliveryTime = { $lte: maxDeliveryTime };
+    }
+    
+    // Handle minRating filter (for minimum star rating)
+    const minRating = parseFloat(req.query.minRating as string);
+    if (!isNaN(minRating)) {
+      matchFilters.rating = { $gte: minRating };
+    }
+    
+    // Handle minReviews filter (for minimum number of reviews)
+    const minReviews = parseInt(req.query.minReviews as string, 10);
+    if (!isNaN(minReviews)) {
+      matchFilters.reviewCount = { $gte: minReviews };
+    }
+    
+    console.log('Near location filters:', matchFilters);
+    
     // Use a simpler approach with MongoDB aggregation pipeline that's robust against errors
     // First, get the count using the $geoNear operator followed by $count
     let total = 0;
     try {
-      const geoQuery = await Restaurant.aggregate([
+      const countPipeline: any[] = [
         {
           $geoNear: {
             near: {
@@ -214,11 +267,19 @@ export const getRestaurantsNearLocation = async (
             maxDistance: distance,
             spherical: true
           }
-        },
-        {
-          $count: "total"
         }
-      ]);
+      ];
+      
+      // Add $match stage if we have additional filters
+      if (Object.keys(matchFilters).length > 0) {
+        countPipeline.push({ $match: matchFilters });
+      }
+      
+      // Add count stage
+      countPipeline.push({ $count: "total" });
+      
+      // @ts-ignore - Bypass TypeScript checking for MongoDB aggregation pipeline
+      const geoQuery = await Restaurant.aggregate(countPipeline);
       
       // Get the total count from the query result
       total = geoQuery.length > 0 ? geoQuery[0].total : 0;
@@ -231,7 +292,7 @@ export const getRestaurantsNearLocation = async (
     // Simplify the aggregation pipeline to avoid projection issues
     let restaurants = [];
     try {
-      restaurants = await Restaurant.aggregate([
+      const pipeline: any[] = [
         {
           $geoNear: {
             near: {
@@ -248,10 +309,20 @@ export const getRestaurantsNearLocation = async (
           $addFields: {
             distanceInKm: { $divide: ["$distanceInMeters", 1000] }
           }
-        },
-        { $skip: skip },
-        { $limit: limit }
-      ]);
+        }
+      ];
+      
+      // Add $match stage if we have additional filters
+      if (Object.keys(matchFilters).length > 0) {
+        pipeline.push({ $match: matchFilters });
+      }
+      
+      // Add pagination stages
+      pipeline.push({ $skip: skip });
+      pipeline.push({ $limit: limit });
+      
+      // @ts-ignore - Bypass TypeScript checking for MongoDB aggregation pipeline
+      restaurants = await Restaurant.aggregate(pipeline);
     } catch (error) {
       logger.error(`Error fetching nearby restaurants: ${error}`);
       // Return empty array if there's an error
